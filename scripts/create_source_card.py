@@ -14,8 +14,6 @@ if VENDOR_DIR.exists() and str(VENDOR_DIR) not in sys.path:
 from llm_wiki_maintainer.config import RuntimeConfig
 from llm_wiki_maintainer.source_cards import create_source_card
 
-ROOT_DEFAULT = Path("/Users/glaucon/Obsidian/Glaucon Vault/aristotle-lyceum/llm-wiki")
-
 
 def main() -> int:
     if len(sys.argv) < 2:
@@ -23,7 +21,8 @@ def main() -> int:
         return 2
 
     raw_file = Path(sys.argv[1]).expanduser()
-    cfg = RuntimeConfig.from_root(sys.argv[2] if len(sys.argv) > 2 else ROOT_DEFAULT)
+    root_arg = Path(sys.argv[2]).expanduser().resolve() if len(sys.argv) > 2 else Path.cwd().resolve()
+    cfg = RuntimeConfig.from_root(root_arg)
     if not raw_file.is_absolute():
         raw_file = (Path.cwd() / raw_file).resolve()
 
