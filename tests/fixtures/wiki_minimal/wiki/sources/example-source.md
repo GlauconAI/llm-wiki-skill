@@ -1,5 +1,6 @@
 ---
 type: source
+id: SRC-1
 title: Example Source
 ---
 
