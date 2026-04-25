@@ -3,6 +3,7 @@ from pathlib import Path
 
 import llm_wiki_maintainer.config as config_module
 from llm_wiki_maintainer.config import RuntimeConfig
+from llm_wiki_maintainer.source_cards import create_source_card
 from llm_wiki_maintainer.wiki_io import write_text
 
 
@@ -23,3 +24,21 @@ def test_write_text_creates_parent_directories(tmp_path):
     target = tmp_path / "wiki" / "reports" / "report.md"
     write_text(target, "hello")
     assert target.read_text(encoding="utf-8") == "hello"
+
+
+def test_create_source_card_avoids_duplicate_when_location_matches(wiki_root):
+    raw_file = wiki_root / "raw" / "sources" / "example-raw.md"
+    result = create_source_card(raw_file, wiki_root, today="2026-04-24")
+
+    assert result.status == "exists"
+
+
+def test_create_source_card_writes_today_in_metadata(tmp_path):
+    root = tmp_path / "llm-wiki"
+    raw = root / "raw" / "sources" / "new-note.md"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("# New Note\n", encoding="utf-8")
+
+    result = create_source_card(raw, root, today="2026-04-24")
+
+    assert "created: 2026-04-24" in result.path.read_text(encoding="utf-8")
