@@ -148,6 +148,27 @@ def test_create_source_card_cli_runs_from_repo_root(tmp_path):
     result = subprocess.run(
         [sys.executable, str(script), str(raw), str(root)],
         cwd=Path(__file__).resolve().parents[1],
+        env={},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "created:" in result.stdout
+
+
+def test_create_source_card_cli_accepts_relative_raw_path(tmp_path):
+    root = tmp_path / "llm-wiki"
+    raw = root / "raw" / "sources" / "relative-note.md"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("# Relative Note\n", encoding="utf-8")
+    script = Path(__file__).resolve().parents[1] / "scripts" / "create_source_card.py"
+
+    result = subprocess.run(
+        [sys.executable, str(script), "raw/sources/relative-note.md", str(root)],
+        cwd=root,
+        env={},
         capture_output=True,
         text=True,
         check=False,
