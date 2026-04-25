@@ -13,6 +13,20 @@ def test_load_frontmatter_supports_multiline_yaml_list():
     assert doc.data["sources"] == ["SRC-1", "SRC-2"]
 
 
+def test_load_frontmatter_supports_crlf_delimiters():
+    text = "---\r\ntype: concept\r\nsources:\r\n  - SRC-1\r\n---\r\nbody\r\n"
+    doc = load_frontmatter(text)
+    assert doc.data["sources"] == ["SRC-1"]
+    assert doc.body == "body\r\n"
+
+
+def test_load_frontmatter_supports_bodyless_document():
+    text = "---\ntype: concept\nsources: [SRC-1]\n---"
+    doc = load_frontmatter(text)
+    assert doc.data["sources"] == ["SRC-1"]
+    assert doc.body == ""
+
+
 def test_load_frontmatter_rejects_non_mapping():
     text = "---\n- SRC-1\n- SRC-2\n---\nbody\n"
 

@@ -1,18 +1,22 @@
+import re
 from typing import Any
 
 import yaml
 
 from llm_wiki_maintainer.models import FrontmatterDocument
 
+FRONTMATTER_RE = re.compile(r"\A---(?:\r?\n)(.*?)(?:\r?\n)---(?:\r?\n|$)", re.S)
+
 
 def load_frontmatter(text: str) -> FrontmatterDocument:
-    if not text.startswith("---\n"):
+    if not text.startswith("---"):
         return FrontmatterDocument(data={}, body=text)
 
-    parts = text.split("---\n", 2)
-    if len(parts) != 3:
+    match = FRONTMATTER_RE.match(text)
+    if match is None:
         raise ValueError("frontmatter block is not closed")
-    _, raw_block, body = parts
+    raw_block = match.group(1)
+    body = text[match.end() :]
     data = yaml.safe_load(raw_block) or {}
     if not isinstance(data, dict):
         raise ValueError("frontmatter must decode to a mapping")
