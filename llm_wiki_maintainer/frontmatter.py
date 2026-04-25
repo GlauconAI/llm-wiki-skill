@@ -9,7 +9,10 @@ def load_frontmatter(text: str) -> FrontmatterDocument:
     if not text.startswith("---\n"):
         return FrontmatterDocument(data={}, body=text)
 
-    _, raw_block, body = text.split("---\n", 2)
+    parts = text.split("---\n", 2)
+    if len(parts) != 3:
+        raise ValueError("frontmatter block is not closed")
+    _, raw_block, body = parts
     data = yaml.safe_load(raw_block) or {}
     if not isinstance(data, dict):
         raise ValueError("frontmatter must decode to a mapping")
@@ -24,5 +27,5 @@ def dump_frontmatter(data: dict[str, Any], body: str) -> str:
         "---\n"
         + yaml.safe_dump(normalized, sort_keys=False).strip()
         + "\n---\n"
-        + body.lstrip("\n")
+        + body
     )
