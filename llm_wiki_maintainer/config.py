@@ -14,4 +14,4 @@ class RuntimeConfig:
 
     @classmethod
     def from_root(cls, root: Union[str, Path]) -> "RuntimeConfig":
-        return cls(root=Path(root).expanduser(), today=date.today().isoformat())
+        return cls(root=root, today=date.today().isoformat())
