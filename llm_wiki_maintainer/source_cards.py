@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
-from llm_wiki_maintainer.frontmatter import load_frontmatter
+from llm_wiki_maintainer.frontmatter import dump_frontmatter, load_frontmatter
 from llm_wiki_maintainer.wiki_io import write_text
 
 SRC_ID_RE = re.compile(r"(SRC-\d+)", re.I)
@@ -74,31 +74,26 @@ def render_source_card(raw_file: Path, root: Path, today: str) -> str:
     coverage = guess_coverage(raw_file, text, title)
     key_sections = guess_key_sections(text)
     kind = source_kind(text, source_type)
-    source_refs = f"[{sid}]" if sid else "[]"
-    id_line = f"id: {sid}\n" if sid else ""
     tag_values = ["source"] + [part for part in slugify(title).split("-") if part]
-    tag_line = ", ".join(tag_values)
-    frontmatter = (
-        "---\n"
-        "type: source\n"
-        f"{id_line}"
-        f"title: {title}\n"
-        "agent: aristotle\n"
-        "subagent: source-ingest\n"
-        "cover:\n"
-        "status: active\n"
-        "claim_type: fact\n"
-        "confidence: medium\n"
-        f"source_kind: {kind}\n"
-        f"created: {today}\n"
-        f"updated: {today}\n"
-        f"tags: [{tag_line}]\n"
-        f"sources: {source_refs}\n"
-        "---\n"
-    )
-    content = (
-        frontmatter
-        + f"# Source: {title}\n\n"
+    frontmatter = {
+        "type": "source",
+        "title": title,
+        "agent": "aristotle",
+        "subagent": "source-ingest",
+        "cover": None,
+        "status": "active",
+        "claim_type": "fact",
+        "confidence": "medium",
+        "source_kind": kind,
+        "created": today,
+        "updated": today,
+        "tags": tag_values,
+        "sources": [sid] if sid else [],
+    }
+    if sid:
+        frontmatter["id"] = sid
+    body = (
+        f"# Source: {title}\n\n"
         + "## Location\n"
         + f"[[{stem}|/{rel_raw}]]\n\n"
         + "## Type\n"
@@ -115,7 +110,7 @@ def render_source_card(raw_file: Path, root: Path, today: str) -> str:
         + "- Auto-generated skeleton. Review coverage and key sections before relying on this card.\n"
         + "- Navigation-only notes. Do not turn this source card into a summary page.\n"
     )
-    return content
+    return dump_frontmatter(frontmatter, body)
 
 
 def frontmatter_value(text: str, key: str) -> str | None:

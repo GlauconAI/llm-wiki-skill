@@ -4,6 +4,10 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from llm_wiki_maintainer.config import RuntimeConfig
 from llm_wiki_maintainer.source_cards import create_source_card
 
@@ -18,7 +22,7 @@ def main() -> int:
     raw_file = Path(sys.argv[1]).expanduser()
     cfg = RuntimeConfig.from_root(sys.argv[2] if len(sys.argv) > 2 else ROOT_DEFAULT)
 
-    if not raw_file.exists():
+    if not raw_file.is_file():
         print(f"ERROR: raw file not found: {raw_file}")
         return 2
 

@@ -1,8 +1,11 @@
 from datetime import date
 from pathlib import Path
+import subprocess
+import sys
 
 import llm_wiki_maintainer.config as config_module
 from llm_wiki_maintainer.config import RuntimeConfig
+from llm_wiki_maintainer.frontmatter import load_frontmatter
 from llm_wiki_maintainer.source_cards import create_source_card
 from llm_wiki_maintainer.wiki_io import write_text
 
@@ -116,6 +119,39 @@ def test_create_source_card_writes_today_in_metadata(tmp_path):
     raw.write_text("# New Note\n", encoding="utf-8")
 
     result = create_source_card(raw, root, today="2026-04-24")
+    document = load_frontmatter(result.path.read_text(encoding="utf-8"))
 
     assert result.path.name == "new-note.md"
-    assert "created: 2026-04-24" in result.path.read_text(encoding="utf-8")
+    assert document.data["created"] == "2026-04-24"
+
+
+def test_create_source_card_writes_parseable_frontmatter_for_colon_title(tmp_path):
+    root = tmp_path / "llm-wiki"
+    raw = root / "raw" / "sources" / "plato-republic.md"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("---\ntitle: 'Plato: Republic'\n---\n# Plato: Republic\n", encoding="utf-8")
+
+    result = create_source_card(raw, root, today="2026-04-24")
+    document = load_frontmatter(result.path.read_text(encoding="utf-8"))
+
+    assert document.data["title"] == "Plato: Republic"
+    assert document.data["created"] == "2026-04-24"
+
+
+def test_create_source_card_cli_runs_from_repo_root(tmp_path):
+    root = tmp_path / "llm-wiki"
+    raw = root / "raw" / "sources" / "cli-note.md"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("# CLI Note\n", encoding="utf-8")
+    script = Path(__file__).resolve().parents[1] / "scripts" / "create_source_card.py"
+
+    result = subprocess.run(
+        [sys.executable, str(script), str(raw), str(root)],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "created:" in result.stdout
