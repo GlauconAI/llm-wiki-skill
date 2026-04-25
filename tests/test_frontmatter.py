@@ -27,6 +27,20 @@ def test_load_frontmatter_supports_bodyless_document():
     assert doc.body == ""
 
 
+def test_load_frontmatter_leaves_hyphen_prefix_text_as_plain_body():
+    text = "----\nbody\n"
+    doc = load_frontmatter(text)
+    assert doc.data == {}
+    assert doc.body == text
+
+
+def test_load_frontmatter_leaves_heading_like_hyphen_prefix_text_as_plain_body():
+    text = "--- heading\nbody\n"
+    doc = load_frontmatter(text)
+    assert doc.data == {}
+    assert doc.body == text
+
+
 def test_load_frontmatter_rejects_non_mapping():
     text = "---\n- SRC-1\n- SRC-2\n---\nbody\n"
 

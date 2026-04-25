@@ -9,7 +9,7 @@ FRONTMATTER_RE = re.compile(r"\A---(?:\r?\n)(.*?)(?:\r?\n)---(?:\r?\n|$)", re.S)
 
 
 def load_frontmatter(text: str) -> FrontmatterDocument:
-    if not text.startswith("---"):
+    if re.match(r"\A---(?:\r?\n)", text) is None:
         return FrontmatterDocument(data={}, body=text)
 
     match = FRONTMATTER_RE.match(text)
