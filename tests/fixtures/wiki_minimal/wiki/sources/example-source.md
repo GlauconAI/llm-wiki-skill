@@ -3,6 +3,22 @@ type: source
 title: Example Source
 ---
 
-# Example Source
+# Source: Example Source
 
-- Source card for the minimal fixture.
+## Location
+[[raw/sources/example-raw|/raw/sources/example-raw.md]]
+
+## Type
+md
+
+## Coverage
+- Minimal fixture coverage.
+
+## Used by
+- [[wiki/overview]]
+
+## Key Sections
+- Minimal fixture section.
+
+## Notes
+- Minimal source card for lint and harness coverage.
