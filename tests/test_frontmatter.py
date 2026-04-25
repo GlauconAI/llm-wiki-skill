@@ -1,4 +1,4 @@
-from llm_wiki_maintainer.frontmatter import load_frontmatter
+from llm_wiki_maintainer.frontmatter import dump_frontmatter, load_frontmatter
 
 
 def test_load_frontmatter_supports_inline_sources():
@@ -22,3 +22,11 @@ def test_load_frontmatter_rejects_non_mapping():
         assert "mapping" in str(exc)
     else:
         raise AssertionError("expected ValueError")
+
+
+def test_dump_frontmatter_normalizes_sources_tuple_to_list():
+    dumped = dump_frontmatter({"type": "concept", "sources": ("SRC-1", "SRC-2")}, "body\n")
+
+    doc = load_frontmatter(dumped)
+    assert doc.data["sources"] == ["SRC-1", "SRC-2"]
+    assert doc.body == "body\n"
