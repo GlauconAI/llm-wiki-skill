@@ -222,6 +222,14 @@ def location_section(text: str) -> str:
 def location_has_raw_link(location: str, target: str) -> bool:
     for match in WIKILINK_RE.finditer(location):
         link_target, _link_display = match.groups()
-        if link_target == target:
+        if normalize_wikilink_target(link_target) == target:
             return True
     return False
+
+
+def normalize_wikilink_target(target: str) -> str:
+    normalized = target.strip()
+    normalized = normalized.lstrip("/")
+    if normalized.endswith(".md"):
+        normalized = normalized[:-3]
+    return normalized
