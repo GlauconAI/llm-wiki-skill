@@ -117,4 +117,5 @@ def test_create_source_card_writes_today_in_metadata(tmp_path):
 
     result = create_source_card(raw, root, today="2026-04-24")
 
+    assert result.path.name == "new-note.md"
     assert "created: 2026-04-24" in result.path.read_text(encoding="utf-8")

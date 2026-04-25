@@ -25,6 +25,14 @@ def slugify(text: str) -> str:
     return text or "untitled-source"
 
 
+def source_name_seed(raw_file: Path) -> str:
+    stem = raw_file.stem
+    if stem.startswith("SRC-"):
+        parts = stem[4:].split("-", 1)
+        return parts[1] if len(parts) == 2 else parts[0]
+    return stem
+
+
 def create_source_card(raw_file: Path, root: Path, today: str) -> SourceCardResult:
     existing = find_existing_card_for_raw(root, raw_file)
     if existing is not None:
@@ -46,7 +54,7 @@ def find_existing_card_for_raw(root: Path, raw_file: Path) -> Path | None:
 
 
 def build_source_card_path(raw_file: Path, root: Path) -> Path:
-    default_name = slugify(raw_file.stem.replace("SRC-", "").split("-", 1)[-1]) + ".md"
+    default_name = slugify(source_name_seed(raw_file)) + ".md"
     out = root / "wiki" / "sources" / default_name
     i = 2
     while out.exists():
@@ -176,7 +184,7 @@ def guess_key_sections(text: str) -> list[str]:
 
 def guess_coverage(raw_file: Path, text: str, title: str) -> list[str]:
     keywords = frontmatter_value(text, "keywords")
-    base = slugify(raw_file.stem.replace("SRC-", "").split("-", 1)[-1])
+    base = slugify(source_name_seed(raw_file))
     parts = [part for part in base.split("-") if part]
     items: list[str] = []
     if keywords and keywords.startswith("[") and keywords.endswith("]"):
