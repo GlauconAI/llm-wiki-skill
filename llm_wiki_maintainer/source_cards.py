@@ -8,6 +8,7 @@ from llm_wiki_maintainer.frontmatter import load_frontmatter
 from llm_wiki_maintainer.wiki_io import write_text
 
 SRC_ID_RE = re.compile(r"(SRC-\d+)", re.I)
+WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|([^\]]+))?\]\]")
 
 
 @dataclass(frozen=True)
@@ -35,14 +36,11 @@ def create_source_card(raw_file: Path, root: Path, today: str) -> SourceCardResu
 
 
 def find_existing_card_for_raw(root: Path, raw_file: Path) -> Path | None:
-    rel_raw = raw_file.relative_to(root).as_posix()
+    target = raw_file.relative_to(root).with_suffix("").as_posix()
     for card in sorted((root / "wiki" / "sources").glob("*.md")):
         text = card.read_text(encoding="utf-8", errors="replace")
         location = location_section(text)
-        if (
-            f"[[raw/sources/{raw_file.stem}" in location
-            or f"|/{rel_raw}]]" in location
-        ):
+        if location_has_raw_link(location, target=target):
             return card
     return None
 
@@ -219,3 +217,11 @@ def location_section(text: str) -> str:
     if match is None:
         return ""
     return match.group("section")
+
+
+def location_has_raw_link(location: str, target: str) -> bool:
+    for match in WIKILINK_RE.finditer(location):
+        link_target, _link_display = match.groups()
+        if link_target == target:
+            return True
+    return False

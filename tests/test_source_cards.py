@@ -33,6 +33,44 @@ def test_create_source_card_avoids_duplicate_when_location_matches(wiki_root):
     assert result.status == "exists"
 
 
+def test_create_source_card_detects_duplicate_with_unaliased_location(wiki_root):
+    card = wiki_root / "wiki" / "sources" / "example-source.md"
+    card.write_text(
+        """---
+type: source
+id: SRC-1
+title: Example Source
+---
+
+# Source: Example Source
+
+## Location
+[[raw/sources/example-raw]]
+
+## Type
+md
+
+## Coverage
+- Minimal fixture coverage.
+
+## Used by
+- [[wiki/overview]]
+
+## Key Sections
+- Minimal fixture section.
+
+## Notes
+- Minimal source card for lint and harness coverage.
+""",
+        encoding="utf-8",
+    )
+    raw_file = wiki_root / "raw" / "sources" / "example-raw.md"
+
+    result = create_source_card(raw_file, wiki_root, today="2026-04-24")
+
+    assert result.status == "exists"
+
+
 def test_create_source_card_writes_today_in_metadata(tmp_path):
     root = tmp_path / "llm-wiki"
     raw = root / "raw" / "sources" / "new-note.md"
