@@ -2,6 +2,10 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
+from llm_wiki_maintainer.ingest.analysis import AnalysisArtifact
+from llm_wiki_maintainer.ingest.generation import GenerationArtifact
 from llm_wiki_maintainer.ingest.planner import suggest_target_pages
 
 
@@ -101,3 +105,57 @@ def test_suggest_target_pages_matches_short_acronyms(tmp_path):
         "wiki/api",
     }
     assert all(candidate.score > 0 for candidate in ranked)
+
+
+def test_analysis_artifact_validates_required_fields_and_serializes():
+    artifact = AnalysisArtifact(
+        raw_path="raw/sources/example-raw.md",
+        key_claims=["claim one"],
+        target_pages=["wiki/overview"],
+    )
+
+    assert artifact.tensions == []
+    assert artifact.to_dict() == {
+        "raw_path": "raw/sources/example-raw.md",
+        "key_claims": ["claim one"],
+        "target_pages": ["wiki/overview"],
+        "tensions": [],
+    }
+
+
+def test_analysis_artifact_rejects_non_string_raw_path():
+    with pytest.raises(TypeError, match="raw_path must be a string"):
+        AnalysisArtifact(
+            raw_path=Path("raw/sources/example-raw.md"),
+            key_claims=["claim one"],
+            target_pages=["wiki/overview"],
+        )
+
+
+@pytest.mark.parametrize(
+    ("factory", "kwargs"),
+    [
+        (AnalysisArtifact, {"key_claims": [], "target_pages": []}),
+        (GenerationArtifact, {}),
+    ],
+)
+def test_ingest_artifacts_reject_missing_required_fields(factory, kwargs):
+    with pytest.raises(TypeError):
+        factory(**kwargs)
+
+
+def test_generation_artifact_validates_and_serializes():
+    artifact = GenerationArtifact(
+        outputs={"wiki/overview": "updated page body"},
+        review_items=[{"page": "wiki/overview", "status": "review"}],
+    )
+
+    assert artifact.to_dict() == {
+        "outputs": {"wiki/overview": "updated page body"},
+        "review_items": [{"page": "wiki/overview", "status": "review"}],
+    }
+
+
+def test_generation_artifact_rejects_non_string_outputs():
+    with pytest.raises(TypeError, match="outputs must be a mapping of strings to strings"):
+        GenerationArtifact(outputs={"wiki/overview": 123})
