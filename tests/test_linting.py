@@ -1,3 +1,7 @@
+from pathlib import Path
+import subprocess
+import sys
+
 from llm_wiki_maintainer.linting import LintProblem, lint_root
 
 
@@ -21,3 +25,22 @@ def test_lint_root_returns_problem_objects(wiki_root):
         and "Used by" in problem.message
         for problem in problems
     )
+
+
+def test_lint_script_reports_malformed_frontmatter_without_traceback(wiki_root):
+    broken = wiki_root / "wiki" / "broken.md"
+    broken.write_text("---\ntype: topic\nsources: [SRC-1]\n", encoding="utf-8")
+    script = Path(__file__).resolve().parents[1] / "scripts" / "lint_llm_wiki.py"
+
+    result = subprocess.run(
+        [sys.executable, str(script), str(wiki_root)],
+        cwd=Path(__file__).resolve().parents[1],
+        env={},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "malformed frontmatter" in result.stdout
+    assert "Traceback" not in result.stderr

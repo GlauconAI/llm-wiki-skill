@@ -77,7 +77,18 @@ class LintProblem:
 
 
 def body_without_frontmatter(text: str) -> str:
-    return load_frontmatter(text).body
+    try:
+        return load_frontmatter(text).body
+    except ValueError:
+        return text
+
+
+def frontmatter_error(text: str) -> str | None:
+    try:
+        load_frontmatter(text)
+    except ValueError as exc:
+        return str(exc)
+    return None
 
 
 def nonempty_lines(lines: list[str]) -> list[str]:
@@ -229,6 +240,9 @@ def lint_root(root: Path) -> list[LintProblem]:
     for path in sorted((wiki_dir / "sources").glob("*.md")):
         text = path.read_text(encoding="utf-8")
         card_ref = rel(path, root)
+        error = frontmatter_error(text)
+        if error:
+            add_problem(card_ref, f"malformed frontmatter: {error}")
         if parse_source_id(text):
             actual_usage_by_card.setdefault(card_ref, set())
         for section in SOURCE_REQUIRED:
@@ -250,6 +264,9 @@ def lint_root(root: Path) -> list[LintProblem]:
         if "/sources/" in page_ref:
             continue
         text = path.read_text(encoding="utf-8")
+        error = frontmatter_error(text)
+        if error:
+            add_problem(page_ref, f"malformed frontmatter: {error}")
         page_type = parse_frontmatter_type(text)
 
         if page_type in COMPILED_FACT_TYPES:
@@ -291,6 +308,9 @@ def lint_root(root: Path) -> list[LintProblem]:
     for path in sorted(raw_dir.rglob("*.md")):
         text = path.read_text(encoding="utf-8")
         raw_ref = rel(path, root)
+        error = frontmatter_error(text)
+        if error:
+            add_problem(raw_ref, f"malformed frontmatter: {error}")
         for target in wikilink_targets(text):
             if target.startswith("http://") or target.startswith("https://"):
                 continue

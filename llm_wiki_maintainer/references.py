@@ -11,7 +11,10 @@ SOURCE_ID_RE = re.compile(r"SRC-\d+", re.I)
 
 
 def frontmatter_value(text: str, key: str) -> str | None:
-    value = load_frontmatter(text).data.get(key)
+    try:
+        value = load_frontmatter(text).data.get(key)
+    except ValueError:
+        return None
     if value is None:
         return None
     if isinstance(value, str):
@@ -32,7 +35,10 @@ def parse_source_id(text: str) -> str | None:
 
 
 def parse_sources_field(text: str) -> list[str]:
-    raw_sources = load_frontmatter(text).data.get("sources")
+    try:
+        raw_sources = load_frontmatter(text).data.get("sources")
+    except ValueError:
+        return []
     if raw_sources is None:
         return []
     if isinstance(raw_sources, str):
