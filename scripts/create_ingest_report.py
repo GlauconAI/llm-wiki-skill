@@ -4,8 +4,6 @@ from pathlib import Path
 from datetime import date
 import sys
 
-ROOT_DEFAULT = Path('/Users/glaucon/Obsidian/Glaucon Vault/aristotle-lyceum/llm-wiki')
-
 TEMPLATE = '''---
 type: report
 id: ING-{date_compact}-{slug_upper}
@@ -49,12 +47,30 @@ def slugify(text: str) -> str:
     return '-'.join(text.lower().strip().split())
 
 
+def _looks_like_llm_wiki_root(root: Path) -> bool:
+    return (root / 'raw').is_dir() and (root / 'wiki').is_dir()
+
+
+def _resolve_root_from_cwd() -> Path | None:
+    cwd = Path.cwd().resolve()
+    return cwd if _looks_like_llm_wiki_root(cwd) else None
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print('Usage: python3 scripts/create_ingest_report.py <title> [llm-wiki-root]')
         return 2
     title = sys.argv[1].strip()
-    root = Path(sys.argv[2]).expanduser() if len(sys.argv) > 2 else ROOT_DEFAULT
+    if len(sys.argv) > 2:
+        root = Path(sys.argv[2]).expanduser().resolve()
+        if not root.exists():
+            print(f'ERROR: root not found: {root}')
+            return 2
+    else:
+        root = _resolve_root_from_cwd()
+        if root is None:
+            print('ERROR: current directory does not look like an llm-wiki root; pass an explicit root argument.')
+            return 2
     today = date.today()
     date_iso = today.isoformat()
     slug = slugify(title)
