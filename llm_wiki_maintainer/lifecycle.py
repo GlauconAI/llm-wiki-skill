@@ -74,6 +74,11 @@ def analyze_source_removal(root: Path | str, raw_path: Path | str) -> SourceRemo
         page_ref = source_card.relative_to(root_path).as_posix()
         impact.broken_links.extend(f"{page_ref} -> [[{link}]]" for link in matched_links)
 
+    deleted_pages = {path.resolve() for path in impact.source_cards_to_delete}
+    impact.pages_to_update = [
+        page for page in impact.pages_to_update if page.resolve() not in deleted_pages
+    ]
+
     return impact
 
 

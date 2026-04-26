@@ -81,6 +81,7 @@ def test_analyze_source_removal_reports_self_referential_source_link(
         in impact.broken_links
     )
     assert source_card.resolve() not in impact.pages_to_update
+    assert not set(impact.source_cards_to_delete) & set(impact.pages_to_update)
 
 
 def test_analyze_source_removal_resolves_unique_bare_stem_used_by_links(
