@@ -34,6 +34,23 @@ def test_suggest_target_pages_script_reports_positive_candidates(wiki_root):
     assert "[[wiki/overview|Overview]] (score: 5)" in result.stdout
 
 
+def test_suggest_target_pages_script_uses_default_root_from_raw_layout(wiki_root):
+    raw = wiki_root / "raw" / "sources" / "example-raw.md"
+    script = Path(__file__).resolve().parents[1] / "scripts" / "suggest_target_pages.py"
+
+    result = subprocess.run(
+        [sys.executable, str(script), str(raw)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "Suggested affected pages:" in result.stdout
+    assert "ERROR: raw file not found" not in result.stdout
+    assert "[[wiki/overview|Overview]] (score: 5)" in result.stdout
+
+
 def test_suggest_target_pages_script_keeps_empty_message(tmp_path):
     root = tmp_path / "llm-wiki"
     raw = root / "raw" / "sources" / "example-raw.md"
@@ -52,3 +69,35 @@ def test_suggest_target_pages_script_keeps_empty_message(tmp_path):
     assert result.returncode == 0
     assert "Suggested affected pages:" in result.stdout
     assert "No strong candidates found" in result.stdout
+
+
+def test_suggest_target_pages_matches_short_acronyms(tmp_path):
+    root = tmp_path / "llm-wiki"
+    raw = root / "raw" / "sources" / "acronyms.md"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("AI UX DB OS API", encoding="utf-8")
+
+    wiki = root / "wiki"
+    wiki.mkdir(parents=True)
+    for slug, title in [
+        ("ai", "AI"),
+        ("ux", "UX"),
+        ("db", "DB"),
+        ("os", "OS"),
+        ("api", "API"),
+    ]:
+        (wiki / f"{slug}.md").write_text(
+            f"---\ntype: concept\ntitle: {title}\n---\n\n# {title}\n{title}\n",
+            encoding="utf-8",
+        )
+
+    ranked = suggest_target_pages(raw, root)
+
+    assert {candidate.path for candidate in ranked} == {
+        "wiki/ai",
+        "wiki/ux",
+        "wiki/db",
+        "wiki/os",
+        "wiki/api",
+    }
+    assert all(candidate.score > 0 for candidate in ranked)

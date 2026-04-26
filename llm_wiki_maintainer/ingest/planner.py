@@ -7,7 +7,7 @@ import re
 
 from llm_wiki_maintainer.frontmatter import load_frontmatter
 
-WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9\-]{2,}|[\u4e00-\u9fff]{2,}")
+WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9\-]{1,}|[\u4e00-\u9fff]{2,}")
 STOPWORDS = {
     "the",
     "and",
@@ -92,11 +92,16 @@ def _body_without_frontmatter(text: str) -> str:
 
 
 def tokenize(text: str) -> list[str]:
-    return [
-        token
-        for token in WORD_RE.findall(text.lower())
-        if len(token) >= 2 and token not in STOPWORDS
-    ]
+    tokens: list[str] = []
+    for raw_token in WORD_RE.findall(text):
+        token = raw_token.lower()
+        if len(token) >= 3:
+            if token not in STOPWORDS:
+                tokens.append(token)
+            continue
+        if raw_token.isupper() and len(token) >= 2 and token not in STOPWORDS:
+            tokens.append(token)
+    return tokens
 
 
 def weighted_tokens(raw_text: str, raw_file: Path) -> Counter[str]:

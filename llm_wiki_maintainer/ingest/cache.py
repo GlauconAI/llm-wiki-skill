@@ -91,4 +91,6 @@ class SourceManifest:
             yaml.safe_dump({"hashes": hashes}, sort_keys=True),
             encoding="utf-8",
         )
+        self.root = root_path
+        self.hashes = hashes
         return path

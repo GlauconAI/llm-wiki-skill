@@ -8,7 +8,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from llm_wiki_maintainer.ingest.planner import suggest_target_pages
 
-ROOT_DEFAULT = Path("/Users/glaucon/Obsidian/Glaucon Vault/aristotle-lyceum/llm-wiki")
+
+def _default_root(raw_file: Path) -> Path:
+    raw_path = raw_file.expanduser().resolve()
+    return raw_path.parents[2]
 
 
 def main() -> int:
@@ -16,10 +19,10 @@ def main() -> int:
         print("Usage: python3 scripts/suggest_target_pages.py <raw-file> [llm-wiki-root]")
         return 2
     raw_file = Path(sys.argv[1]).expanduser()
-    root = Path(sys.argv[2]).expanduser() if len(sys.argv) > 2 else ROOT_DEFAULT
     if not raw_file.exists():
         print(f"ERROR: raw file not found: {raw_file}")
         return 2
+    root = Path(sys.argv[2]).expanduser() if len(sys.argv) > 2 else _default_root(raw_file)
 
     candidates = suggest_target_pages(raw_file, root)
     print("Suggested affected pages:")
