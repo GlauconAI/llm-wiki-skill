@@ -35,6 +35,8 @@ Run `python3 scripts/lint_llm_wiki.py` after structural edits or before claiming
 - Do not drop steps, constraints, exceptions, numbers, dates, or definitions when they matter.
 - Make wiki pages usable for normal questions without forcing the user back to raw every time.
 - For high-stakes or uncertain claims, always trace back to raw.
+- Use review items to bridge ingest uncertainty to human judgment; they are a handoff, not a substitute for evidence.
+- Queue research tasks only after review approval or an explicit user request.
 - Use Obsidian-clickable wikilinks for internal vault paths; do not leave raw pointers as plain code-formatted text paths.
 - Source cards are navigation-only. If a page starts teaching the topic instead of routing to evidence, it is in the wrong layer.
 - Avoid source laundering: do not cite a source card as if it were evidence for a claim. Source cards route; raw proves.
