@@ -1,3 +1,5 @@
+import pytest
+
 from llm_wiki_maintainer.query.retrieve import retrieve_context
 from llm_wiki_maintainer.query.tokenize import tokenize_query
 
@@ -9,6 +11,12 @@ def test_tokenize_query_supports_english_words():
 def test_tokenize_query_supports_chinese_bigrams():
     tokens = tokenize_query("知识图谱")
     assert any(len(token) >= 2 for token in tokens)
+
+
+def test_retrieve_context_ignores_short_ascii_substrings(wiki_root):
+    result = retrieve_context("ex", wiki_root, limit=5)
+
+    assert result.pages == []
 
 
 def test_retrieve_context_returns_ranked_pages(wiki_root):
@@ -31,3 +39,10 @@ example example example example example example
     assert result.pages
     assert result.pages[0].path.name == "example-heavy.md"
     assert result.pages[0].score >= result.pages[-1].score
+
+
+@pytest.mark.parametrize("limit", [0, -1])
+def test_retrieve_context_clamps_non_positive_limits(wiki_root, limit):
+    result = retrieve_context("example", wiki_root, limit=limit)
+
+    assert result.pages == []

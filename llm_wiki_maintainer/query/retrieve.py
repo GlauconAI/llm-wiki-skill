@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 from pathlib import Path
 from typing import Iterable
 
@@ -48,15 +49,29 @@ def _excerpt(text: str, tokens: Iterable[str]) -> str:
     for token in tokens:
         if not token:
             continue
-        index = lower_text.find(token.lower())
-        if index == -1:
+        match = _token_match(lower_text, token)
+        if match is None:
             continue
-        start = max(0, index - 40)
-        end = min(len(text), index + len(token) + 80)
+        start, end_index = match
+        end = min(len(text), end_index + 80)
+        start = max(0, start - 40)
         snippet = text[start:end].replace("\n", " ").strip()
         if snippet:
             return snippet
     return text.splitlines()[0].strip() if text else ""
+
+
+def _token_match(text: str, token: str) -> tuple[int, int] | None:
+    lowered = token.lower()
+    if lowered.isascii():
+        match = re.search(rf"\b{re.escape(lowered)}\b", text)
+        if match is None:
+            return None
+        return match.span()
+    index = text.find(lowered)
+    if index == -1:
+        return None
+    return index, index + len(lowered)
 
 
 def _score_page(query_tokens: list[str], title: str, content: str, sources: list[str]) -> float:
@@ -67,12 +82,11 @@ def _score_page(query_tokens: list[str], title: str, content: str, sources: list
     source_text = " ".join(sources).lower()
     score = 0.0
     for token in query_tokens:
-        lowered = token.lower()
-        if lowered in title_text:
+        if _token_match(title_text, token) is not None:
             score += 3.0
-        if lowered in content_text:
+        if _token_match(content_text, token) is not None:
             score += 1.0
-        if lowered in source_text:
+        if _token_match(source_text, token) is not None:
             score += 1.5
     return score
 
@@ -80,6 +94,7 @@ def _score_page(query_tokens: list[str], title: str, content: str, sources: list
 def retrieve_context(query: str, root: Path, limit: int = 8) -> RetrievalResult:
     root_path = Path(root)
     query_tokens = tokenize_query(query)
+    limit = max(0, int(limit))
     pages: list[RetrievedPage] = []
 
     for path in sorted((root_path / "wiki").rglob("*.md")):

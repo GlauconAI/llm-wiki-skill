@@ -34,5 +34,5 @@ def _cjk_bigrams(text: str) -> list[str]:
 
 def tokenize_query(text: str) -> list[str]:
     lowered = text.lower()
-    ascii_tokens = ASCII_WORD_RE.findall(lowered)
+    ascii_tokens = [token for token in ASCII_WORD_RE.findall(lowered) if len(token) >= 2]
     return ascii_tokens + _cjk_bigrams(text)
