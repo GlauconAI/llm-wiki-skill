@@ -87,11 +87,12 @@ def add_node(graph: WikiGraph, node_id: str, **attrs: object) -> None:
 def add_edge(graph: WikiGraph, source: str, target: str, **attrs: object) -> None:
     edge = {"source": source, "target": target, **attrs}
     graph.edges.append(edge)
-    increment_degree(graph, source)
-    if target != source:
+    if source in graph.nodes:
+        increment_degree(graph, source)
+    if target != source and target in graph.nodes:
         increment_degree(graph, target)
 
 
 def increment_degree(graph: WikiGraph, node_id: str) -> None:
-    node = graph.nodes.setdefault(node_id, {"degree": 0})
+    node = graph.nodes[node_id]
     node["degree"] = int(node.get("degree", 0)) + 1

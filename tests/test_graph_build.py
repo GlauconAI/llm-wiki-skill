@@ -75,7 +75,19 @@ See [[wiki/not-loaded]].
         and edge["target"] == "wiki/not-loaded"
         for edge in graph.edges
     )
-    assert graph.nodes["wiki/not-loaded"]["degree"] == 1
+    assert "wiki/not-loaded" not in graph.nodes
+
+
+def test_build_graph_does_not_materialize_raw_source_wikilinks_as_nodes(wiki_root):
+    graph = build_graph(wiki_root)
+
+    assert any(
+        edge["kind"] == "wikilink"
+        and edge["source"] == "wiki/overview"
+        and edge["target"] == "raw/sources/example-raw"
+        for edge in graph.edges
+    )
+    assert "raw/sources/example-raw" not in graph.nodes
 
 
 def test_build_graph_skips_malformed_files_without_aborting(wiki_root):
