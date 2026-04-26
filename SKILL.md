@@ -29,6 +29,9 @@ Run `python3 scripts/lint_llm_wiki.py` after structural edits or before claiming
   1. locally, near the claim itself with an inline raw pointer; and
   2. globally, in `## Raw Source Pointers` for page-level traceability.
 - Compress wording, not information.
+- Store analysis artifacts under `.llm-wiki/analysis/`.
+- Store generation artifacts under `.llm-wiki/generation/`.
+- Validate artifacts before any file writes.
 - Do not drop steps, constraints, exceptions, numbers, dates, or definitions when they matter.
 - Make wiki pages usable for normal questions without forcing the user back to raw every time.
 - For high-stakes or uncertain claims, always trace back to raw.
