@@ -65,3 +65,15 @@ def test_lint_root_reports_missing_source_card_id(wiki_root):
         and "Used by lists non-actual references" in problem.message
         for problem in problems
     )
+
+
+def test_lint_root_treats_equivalent_used_by_link_targets_as_matching(wiki_root):
+    source_card = wiki_root / "wiki" / "sources" / "example-source.md"
+    source_card.write_text(
+        source_card.read_text(encoding="utf-8").replace("[[wiki/overview]]", "[[/wiki/overview.md]]"),
+        encoding="utf-8",
+    )
+
+    problems = lint_root(wiki_root)
+
+    assert not any("Used by" in problem.message for problem in problems)

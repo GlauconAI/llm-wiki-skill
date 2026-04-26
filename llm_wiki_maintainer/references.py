@@ -6,7 +6,7 @@ import re
 import yaml
 
 from llm_wiki_maintainer.frontmatter import load_frontmatter
-from llm_wiki_maintainer.links import rel, section_block, section_bounds
+from llm_wiki_maintainer.links import rel, section_block, section_bounds, wikilink_targets
 
 COMPILED_FACT_TYPES = {"overview", "concept", "entity", "topic"}
 SOURCE_ID_RE = re.compile(r"SRC-\d+", re.I)
@@ -68,8 +68,9 @@ def parse_sources_field(text: str) -> list[str]:
 
 def used_by_links(text: str) -> set[str]:
     links: set[str] = set()
-    for target in re.findall(r"\[\[(wiki/[^\]|#]+)", section_block(text, "## Used by")):
-        links.add(target)
+    for target in wikilink_targets(section_block(text, "## Used by")):
+        if target.startswith("wiki/"):
+            links.add(target)
     return links
 
 
