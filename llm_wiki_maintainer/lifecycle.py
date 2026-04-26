@@ -52,15 +52,6 @@ def analyze_source_removal(root: Path | str, raw_path: Path | str) -> SourceRemo
         page_ref = page.relative_to(root_path).as_posix()
         impact.broken_links.extend(f"{page_ref} -> [[{link}]]" for link in matched_links)
 
-    for source_card in source_cards:
-        source_text = _safe_read(source_card)
-        location = location_section(source_text)
-        for link in wikilink_targets(location):
-            if normalize_wikilink_target(link) == raw_target:
-                impact.broken_links.append(
-                    f"{source_card.relative_to(root_path).as_posix()} -> [[{link}]]"
-                )
-
     return impact
 
 
@@ -121,6 +112,10 @@ def _dependent_pages_from_source_cards(root: Path, source_cards: list[Path]) -> 
 
 def _resolve_wikilink_target(root: Path, target: str) -> Path | None:
     normalized = normalize_wikilink_target(target)
+
+    if "/" not in normalized and Path(normalized).suffix == "":
+        return None
+
     candidate = root / normalized
 
     if candidate.is_file():
