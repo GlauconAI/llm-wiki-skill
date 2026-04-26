@@ -44,7 +44,7 @@ def _page_text(path: Path, text: str) -> str:
     return document.body.strip() or path.stem.replace("-", " ").strip() or path.stem
 
 
-def _page_excerpt_text(path: Path, text: str) -> str:
+def _page_excerpt_source(path: Path, text: str, tokens: Iterable[str], sources: Iterable[str]) -> str:
     try:
         document = load_frontmatter(text)
     except Exception:
@@ -53,6 +53,16 @@ def _page_excerpt_text(path: Path, text: str) -> str:
     else:
         body = document.body.strip()
         title = _page_title(path, text)
+
+    body_matches = body and any(_token_match(body.lower(), token) is not None for token in tokens if token)
+    if body_matches:
+        return body
+
+    title_matches = title and any(_token_match(title.lower(), token) is not None for token in tokens if token)
+    source_text = " ".join(sources).lower()
+    source_matches = source_text and any(_token_match(source_text, token) is not None for token in tokens if token)
+    if title_matches or source_matches:
+        return title
 
     if body:
         return body
@@ -129,7 +139,7 @@ def retrieve_context(query: str, root: Path, limit: int = 8) -> RetrievalResult:
                 path=path,
                 title=title,
                 score=score,
-                excerpt=_excerpt(_page_excerpt_text(path, text), query_tokens),
+                excerpt=_excerpt(_page_excerpt_source(path, text, query_tokens, sources), query_tokens),
             )
         )
 

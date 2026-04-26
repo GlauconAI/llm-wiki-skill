@@ -41,27 +41,45 @@ example example example example example example
     assert result.pages[0].score >= result.pages[-1].score
 
 
-def test_retrieve_context_uses_body_for_metadata_only_matches(wiki_root):
-    extra = wiki_root / "wiki" / "metadata-only.md"
+def test_retrieve_context_uses_title_for_title_only_matches(wiki_root):
+    extra = wiki_root / "wiki" / "title-only.md"
     extra.write_text(
         """---
 type: concept
-title: Metadata Driven Page
-sources: [metadata-source]
+title: Unique Title Match
 ---
 
-Readable body text only.
+Readable body text without the query term.
 """,
         encoding="utf-8",
     )
 
-    result = retrieve_context("metadata", wiki_root, limit=5)
+    result = retrieve_context("unique", wiki_root, limit=5)
 
     assert result.pages
-    assert result.pages[0].path.name == "metadata-only.md"
-    assert result.pages[0].excerpt == "Readable body text only."
-    assert "---" not in result.pages[0].excerpt
-    assert "title:" not in result.pages[0].excerpt.lower()
+    assert result.pages[0].path.name == "title-only.md"
+    assert result.pages[0].excerpt == "Unique Title Match"
+
+
+def test_retrieve_context_uses_body_for_body_only_matches(wiki_root):
+    extra = wiki_root / "wiki" / "body-only.md"
+    extra.write_text(
+        """---
+type: concept
+title: Generic Page
+---
+
+Readable body text with a unique bodyterm here.
+""",
+        encoding="utf-8",
+    )
+
+    result = retrieve_context("bodyterm", wiki_root, limit=5)
+
+    assert result.pages
+    assert result.pages[0].path.name == "body-only.md"
+    assert result.pages[0].excerpt == "Readable body text with a unique bodyterm here."
+    assert "Generic Page" not in result.pages[0].excerpt
 
 
 @pytest.mark.parametrize("limit", [0, -1])
