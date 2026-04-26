@@ -13,6 +13,22 @@ def test_tokenize_query_supports_chinese_bigrams():
     assert tokens == ["知识", "识图", "图谱"]
 
 
+@pytest.mark.parametrize(
+    "query, expected",
+    [
+        ("source-card", "source card"),
+        ("llm-wiki", "llm wiki"),
+    ],
+)
+def test_tokenize_query_normalizes_hyphenated_ascii_terms(query, expected):
+    assert expected in tokenize_query(query)
+
+
+def test_tokenize_query_supports_hiragana_bigrams():
+    tokens = tokenize_query("かな")
+    assert tokens == ["かな"]
+
+
 def test_retrieve_context_ignores_short_ascii_substrings(wiki_root):
     result = retrieve_context("ex", wiki_root, limit=5)
 
@@ -59,6 +75,35 @@ Readable body text without the query term.
     assert result.pages
     assert result.pages[0].path.name == "title-only.md"
     assert result.pages[0].excerpt == "Unique Title Match"
+
+
+@pytest.mark.parametrize(
+    "query, title, filename",
+    [
+        ("source-card", "Source Card", "source-card.md"),
+        ("llm-wiki", "LLM Wiki", "llm-wiki.md"),
+    ],
+)
+def test_retrieve_context_matches_hyphenated_queries_against_spaced_titles(
+    wiki_root, query, title, filename
+):
+    extra = wiki_root / "wiki" / filename
+    extra.write_text(
+        f"""---
+type: concept
+title: {title}
+---
+
+Readable body text without the query term.
+""",
+        encoding="utf-8",
+    )
+
+    result = retrieve_context(query, wiki_root, limit=5)
+
+    assert result.pages
+    assert result.pages[0].path.name == filename
+    assert result.pages[0].title == title
 
 
 def test_retrieve_context_uses_body_for_body_only_matches(wiki_root):
