@@ -21,6 +21,17 @@ Before touching llm-wiki:
 Read `references/templates.md` when creating or rewriting pages.
 Run `python3 scripts/lint_llm_wiki.py` after structural edits or before claiming the wiki is healthy.
 
+## Backend surface
+
+The CLI scripts are thin wrappers. Treat the package modules as the source of truth for behavior:
+
+- `llm_wiki_maintainer.config` for root/date runtime settings.
+- `llm_wiki_maintainer.frontmatter`, `links`, and `wiki_io` for file format, link handling, and safe writes.
+- `llm_wiki_maintainer.source_cards`, `references`, and `lifecycle` for source-card creation, `Used by` sync, and source-removal impact.
+- `llm_wiki_maintainer.linting` for structural checks.
+- `llm_wiki_maintainer.ingest.planner` for candidate-page suggestions.
+- `llm_wiki_maintainer.models`, `ingest`, `query`, `graph`, `review`, and `research` for the rest of the backend runtime.
+
 ## Operating rules
 
 - Never treat `wiki/sources/` as the final source.

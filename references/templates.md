@@ -2,6 +2,8 @@
 
 ## Source card template
 
+Use the source-card helper to generate this shape, then keep `## Used by` in sync from compiled-page `sources:` frontmatter.
+
 ```md
 ---
 type: source
@@ -40,9 +42,12 @@ sources: [SRC-XXXX]
 
 ## Notes
 - Navigation-only notes. No detailed summary here.
+- Keep this layer navigation-only; `scripts/update_used_by.py` can refresh `## Used by` from actual compiled-page usage.
 ```
 
 ## Compiled wiki page template
+
+Compiled pages are the working layer. Keep `sources:` frontmatter aligned with the source cards that should point back here.
 
 ```md
 # <page title>
