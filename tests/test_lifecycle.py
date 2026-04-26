@@ -14,9 +14,8 @@ def test_analyze_source_removal_reports_dependent_pages(wiki_root: Path) -> None
     assert isinstance(impact.pages_to_update, list)
     assert overview.resolve() in impact.pages_to_update
     assert any("overview.md" in link for link in impact.broken_links)
-    assert not any(
-        link.startswith("wiki/sources/example-source.md ->")
-        for link in impact.broken_links
+    assert "wiki/sources/example-source.md -> [[raw/sources/example-raw]]" in (
+        impact.broken_links
     )
 
 
@@ -39,6 +38,48 @@ def test_analyze_source_removal_reports_sources_frontmatter_dependencies(
     impact = analyze_source_removal(wiki_root, raw)
 
     assert shared.resolve() in impact.pages_to_update
+
+
+def test_analyze_source_removal_reports_self_referential_source_link(
+    wiki_root: Path,
+) -> None:
+    raw = wiki_root / "raw" / "sources" / "example-raw.md"
+    source_card = wiki_root / "wiki" / "sources" / "example-source.md"
+    source_card.write_text(
+        "---\n"
+        "type: source\n"
+        "id: SRC-1\n"
+        "title: Example Source\n"
+        "---\n"
+        "\n"
+        "# Source: Example Source\n"
+        "\n"
+        "## Location\n"
+        "[[raw/sources/example-raw|/raw/sources/example-raw.md]]\n"
+        "\n"
+        "## Type\n"
+        "md\n"
+        "\n"
+        "## Coverage\n"
+        "- Minimal fixture coverage.\n"
+        "\n"
+        "## Used by\n"
+        "- [[wiki/sources/example-source]]\n"
+        "\n"
+        "## Key Sections\n"
+        "- Minimal fixture section.\n"
+        "\n"
+        "## Notes\n"
+        "- Minimal source card for lint and harness coverage.\n",
+        encoding="utf-8",
+    )
+
+    impact = analyze_source_removal(wiki_root, raw)
+
+    assert (
+        "wiki/sources/example-source.md -> [[wiki/sources/example-source]]"
+        in impact.broken_links
+    )
 
 
 def test_analyze_source_removal_does_not_resolve_bare_stem_used_by_links(

@@ -62,6 +62,18 @@ def analyze_source_removal(root: Path | str, raw_path: Path | str) -> SourceRemo
             f"{page_ref} -> sources: [{source_id}]" for source_id in matched_source_ids
         )
 
+    for source_card in source_cards:
+        text = _safe_read(source_card)
+        if not text:
+            continue
+
+        matched_links = _links_to_removed_targets(text, removal_targets)
+        if not matched_links:
+            continue
+
+        page_ref = source_card.relative_to(root_path).as_posix()
+        impact.broken_links.extend(f"{page_ref} -> [[{link}]]" for link in matched_links)
+
     return impact
 
 
@@ -91,6 +103,14 @@ def _path_target(root: Path, path: Path) -> str:
     except ValueError:
         relative = path
     return normalize_wikilink_target(relative.with_suffix("").as_posix())
+
+
+def _links_to_removed_targets(text: str, removal_targets: set[str]) -> list[str]:
+    return [
+        link
+        for link in wikilink_targets(text)
+        if normalize_wikilink_target(link) in removal_targets
+    ]
 
 
 def _source_cards_for_raw(root: Path, raw_target: str) -> list[Path]:
