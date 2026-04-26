@@ -25,6 +25,17 @@ def test_research_task_preserves_queries():
     assert task.queries == ("market map 2026",)
 
 
+def test_research_task_accepts_tuple_queries():
+    task = ResearchTask(topic="market map", queries=("market map 2026", "adjacent market map"))
+
+    assert task.queries == ("market map 2026", "adjacent market map")
+
+
 def test_research_task_rejects_non_string_topic():
     with pytest.raises(TypeError, match="topic must be a string"):
         ResearchTask(topic=123, queries=["market map 2026"])
+
+
+def test_research_task_rejects_non_string_query_entries():
+    with pytest.raises(TypeError, match="queries must be an iterable of strings"):
+        ResearchTask(topic="market map", queries=("market map 2026", 123))

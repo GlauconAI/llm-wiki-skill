@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Iterable
 
 
 def _freeze_str_list(value: object, field_name: str) -> tuple[str, ...]:
-    if not isinstance(value, list):
-        raise TypeError(f"{field_name} must be a list of strings")
-    if not all(isinstance(item, str) for item in value):
-        raise TypeError(f"{field_name} must be a list of strings")
-    return tuple(value)
+    if isinstance(value, (str, bytes)):
+        raise TypeError(f"{field_name} must be an iterable of strings")
+    if not isinstance(value, Iterable):
+        raise TypeError(f"{field_name} must be an iterable of strings")
+    items = tuple(value)
+    if not all(isinstance(item, str) for item in items):
+        raise TypeError(f"{field_name} must be an iterable of strings")
+    return items
 
 
 @dataclass(frozen=True)
