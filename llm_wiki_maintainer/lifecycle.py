@@ -164,12 +164,7 @@ def _resolve_wikilink_target(
     )
 
     if "/" not in normalized and Path(normalized).suffix == "":
-        matches = [
-            page.resolve()
-            for page in _candidate_markdown_pages(root)
-            if page.stem == normalized and page.resolve() not in excluded_resolved
-        ]
-        return matches[0] if len(matches) == 1 else None
+        return _unique_bare_stem_match(root, normalized, excluded_resolved)
 
     candidate = root / normalized
     candidate_resolved = candidate.resolve()
@@ -188,6 +183,17 @@ def _resolve_wikilink_target(
                 return resolved
 
     return None
+
+
+def _unique_bare_stem_match(
+    root: Path, normalized: str, excluded_resolved: set[Path]
+) -> Path | None:
+    matches = [
+        page.resolve()
+        for page in _candidate_markdown_pages(root)
+        if page.stem == normalized and page.resolve() not in excluded_resolved
+    ]
+    return matches[0] if len(matches) == 1 else None
 
 
 def _extend_unique(paths: list[Path], new_paths: Iterable[Path]) -> None:

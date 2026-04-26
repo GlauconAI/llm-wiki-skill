@@ -128,6 +128,63 @@ def test_analyze_source_removal_resolves_unique_bare_stem_used_by_links(
     assert not any("wiki/overview.md -> [[overview]]" in link for link in impact.broken_links)
 
 
+def test_analyze_source_removal_does_not_resolve_ambiguous_bare_stem_used_by_links(
+    wiki_root: Path,
+) -> None:
+    raw = wiki_root / "raw" / "sources" / "ambiguous-bare-stem-raw.md"
+    raw.write_text(
+        "# Ambiguous Bare Stem Raw\n",
+        encoding="utf-8",
+    )
+    source_card = wiki_root / "wiki" / "sources" / "ambiguous-bare-stem-source.md"
+    source_card.write_text(
+        "---\n"
+        "type: source\n"
+        "id: SRC-102\n"
+        "title: Ambiguous Bare Stem Source\n"
+        "---\n"
+        "\n"
+        "# Source: Ambiguous Bare Stem Source\n"
+        "\n"
+        "## Location\n"
+        "[[raw/sources/ambiguous-bare-stem-raw|/raw/sources/ambiguous-bare-stem-raw.md]]\n"
+        "\n"
+        "## Type\n"
+        "md\n"
+        "\n"
+        "## Coverage\n"
+        "- Ambiguous bare stem coverage.\n"
+        "\n"
+        "## Used by\n"
+        "- [[consumer]]\n"
+        "\n"
+        "## Key Sections\n"
+        "- Ambiguous bare stem section.\n"
+        "\n"
+        "## Notes\n"
+        "- Ambiguous bare stem source card for testing.\n",
+        encoding="utf-8",
+    )
+    same_directory_consumer = wiki_root / "wiki" / "sources" / "consumer.md"
+    same_directory_consumer.write_text(
+        "# Same Directory Consumer\n",
+        encoding="utf-8",
+    )
+    elsewhere_consumer = wiki_root / "wiki" / "consumer.md"
+    elsewhere_consumer.write_text(
+        "# Elsewhere Consumer\n",
+        encoding="utf-8",
+    )
+
+    impact = analyze_source_removal(wiki_root, raw)
+
+    assert source_card.resolve() in impact.source_cards_to_delete
+    assert same_directory_consumer.resolve() not in impact.pages_to_update
+    assert elsewhere_consumer.resolve() not in impact.pages_to_update
+    assert not any("wiki/sources/consumer.md -> [[consumer]]" in link for link in impact.broken_links)
+    assert not any("wiki/consumer.md -> [[consumer]]" in link for link in impact.broken_links)
+
+
 def test_analyze_source_removal_does_not_fall_back_from_explicit_path_links(
     wiki_root: Path,
 ) -> None:
