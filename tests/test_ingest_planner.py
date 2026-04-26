@@ -108,18 +108,27 @@ def test_suggest_target_pages_matches_short_acronyms(tmp_path):
 
 
 def test_analysis_artifact_validates_required_fields_and_serializes():
+    key_claims = ["claim one"]
+    target_pages = ["wiki/overview"]
+    tensions = ["counterpoint"]
     artifact = AnalysisArtifact(
         raw_path="raw/sources/example-raw.md",
-        key_claims=["claim one"],
-        target_pages=["wiki/overview"],
+        key_claims=key_claims,
+        target_pages=target_pages,
+        tensions=tensions,
     )
+    key_claims.append("mutated")
+    target_pages.clear()
+    tensions[0] = "mutated"
 
-    assert artifact.tensions == []
+    assert artifact.key_claims == ("claim one",)
+    assert artifact.target_pages == ("wiki/overview",)
+    assert artifact.tensions == ("counterpoint",)
     assert artifact.to_dict() == {
         "raw_path": "raw/sources/example-raw.md",
         "key_claims": ["claim one"],
         "target_pages": ["wiki/overview"],
-        "tensions": [],
+        "tensions": ["counterpoint"],
     }
 
 
@@ -145,17 +154,60 @@ def test_ingest_artifacts_reject_missing_required_fields(factory, kwargs):
 
 
 def test_generation_artifact_validates_and_serializes():
+    outputs = {"wiki/overview": "updated page body"}
+    review_items = [
+        {
+            "id": "rv-1",
+            "title": "Need page",
+            "action": "create_page",
+            "status": "pending",
+        }
+    ]
     artifact = GenerationArtifact(
-        outputs={"wiki/overview": "updated page body"},
-        review_items=[{"page": "wiki/overview", "status": "review"}],
+        outputs=outputs,
+        review_items=review_items,
+    )
+    outputs["wiki/overview"] = "mutated"
+    review_items[0]["status"] = "approved"
+    review_items.append(
+        {
+            "id": "rv-2",
+            "title": "Research topic",
+            "action": "deep_research",
+            "status": "pending",
+        }
     )
 
     assert artifact.to_dict() == {
         "outputs": {"wiki/overview": "updated page body"},
-        "review_items": [{"page": "wiki/overview", "status": "review"}],
+        "review_items": [
+            {
+                "id": "rv-1",
+                "title": "Need page",
+                "action": "create_page",
+                "status": "pending",
+            }
+        ],
     }
 
 
 def test_generation_artifact_rejects_non_string_outputs():
     with pytest.raises(TypeError, match="outputs must be a mapping of strings to strings"):
         GenerationArtifact(outputs={"wiki/overview": 123})
+
+
+@pytest.mark.parametrize(
+    "review_items",
+    [
+        [{}],
+        [{"id": "rv-1", "title": "Need page", "action": "create_page"}],
+        [{"id": "rv-1", "title": "Need page", "action": "create_page", "status": 1}],
+        [{"id": "rv-1", "title": "Need page", "action": "create_page", "status": "pending", "page": "wiki/overview"}],
+    ],
+)
+def test_generation_artifact_rejects_invalid_review_items(review_items):
+    with pytest.raises(TypeError):
+        GenerationArtifact(
+            outputs={"wiki/overview": "updated page body"},
+            review_items=review_items,
+        )
