@@ -5,7 +5,7 @@ description: Use when working on Aristotle's llm-wiki knowledge system: ingestin
 
 # LLM Wiki Maintainer
 
-Maintain `/Users/glaucon/Obsidian/Glaucon Vault/aristotle-lyceum/llm-wiki` as a strict three-layer system:
+Maintain `/Users/glaucon/Obsidian/Glaucon's Vault/aristotle-lyceum/llm-wiki` as a strict three-layer system:
 
 - `raw/` = only source of truth
 - `wiki/` = directly usable compiled knowledge
@@ -14,9 +14,9 @@ Maintain `/Users/glaucon/Obsidian/Glaucon Vault/aristotle-lyceum/llm-wiki` as a 
 ## Required reads
 
 Before touching llm-wiki:
-1. Read `/Users/glaucon/Obsidian/Glaucon Vault/README.md`
-2. Read `/Users/glaucon/Obsidian/Glaucon Vault/aristotle-lyceum/llm-wiki/AGENTS.md`
-3. Read `/Users/glaucon/Obsidian/Glaucon Vault/aristotle-lyceum/llm-wiki/index.md`
+1. Read `/Users/glaucon/Obsidian/Glaucon's Vault/README.md`
+2. Read `/Users/glaucon/Obsidian/Glaucon's Vault/aristotle-lyceum/llm-wiki/AGENTS.md`
+3. Read `/Users/glaucon/Obsidian/Glaucon's Vault/aristotle-lyceum/llm-wiki/index.md`
 
 Read `references/templates.md` when creating or rewriting pages.
 Run `python3 scripts/lint_llm_wiki.py` after structural edits or before claiming the wiki is healthy.
