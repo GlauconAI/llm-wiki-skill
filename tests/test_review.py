@@ -22,13 +22,15 @@ def test_research_task_preserves_queries():
 
     assert task.topic == "market map"
     assert task.status == "pending"
-    assert task.queries == ("market map 2026",)
+    assert isinstance(task.queries, list)
+    assert task.queries == ["market map 2026"]
 
 
 def test_research_task_accepts_tuple_queries():
     task = ResearchTask(topic="market map", queries=("market map 2026", "adjacent market map"))
 
-    assert task.queries == ("market map 2026", "adjacent market map")
+    assert isinstance(task.queries, list)
+    assert task.queries == ["market map 2026", "adjacent market map"]
 
 
 def test_research_task_rejects_non_string_topic():
