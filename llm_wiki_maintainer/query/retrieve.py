@@ -38,10 +38,27 @@ def _page_title(path: Path, text: str) -> str:
 
 def _page_text(path: Path, text: str) -> str:
     try:
-        body = load_frontmatter(text).body
+        document = load_frontmatter(text)
     except Exception:
-        body = text
-    return f"{path.stem}\n{text}\n{body}"
+        return text
+    return document.body.strip() or path.stem.replace("-", " ").strip() or path.stem
+
+
+def _page_excerpt_text(path: Path, text: str) -> str:
+    try:
+        document = load_frontmatter(text)
+    except Exception:
+        body = text.strip()
+        title = ""
+    else:
+        body = document.body.strip()
+        title = _page_title(path, text)
+
+    if body:
+        return body
+    if title:
+        return title
+    return path.stem.replace("-", " ").strip() or path.stem
 
 
 def _excerpt(text: str, tokens: Iterable[str]) -> str:
@@ -112,7 +129,7 @@ def retrieve_context(query: str, root: Path, limit: int = 8) -> RetrievalResult:
                 path=path,
                 title=title,
                 score=score,
-                excerpt=_excerpt(content, query_tokens),
+                excerpt=_excerpt(_page_excerpt_text(path, text), query_tokens),
             )
         )
 

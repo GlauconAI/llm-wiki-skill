@@ -10,7 +10,7 @@ def test_tokenize_query_supports_english_words():
 
 def test_tokenize_query_supports_chinese_bigrams():
     tokens = tokenize_query("知识图谱")
-    assert any(len(token) >= 2 for token in tokens)
+    assert tokens == ["知识", "识图", "图谱"]
 
 
 def test_retrieve_context_ignores_short_ascii_substrings(wiki_root):
@@ -39,6 +39,29 @@ example example example example example example
     assert result.pages
     assert result.pages[0].path.name == "example-heavy.md"
     assert result.pages[0].score >= result.pages[-1].score
+
+
+def test_retrieve_context_uses_body_for_metadata_only_matches(wiki_root):
+    extra = wiki_root / "wiki" / "metadata-only.md"
+    extra.write_text(
+        """---
+type: concept
+title: Metadata Driven Page
+sources: [metadata-source]
+---
+
+Readable body text only.
+""",
+        encoding="utf-8",
+    )
+
+    result = retrieve_context("metadata", wiki_root, limit=5)
+
+    assert result.pages
+    assert result.pages[0].path.name == "metadata-only.md"
+    assert result.pages[0].excerpt == "Readable body text only."
+    assert "---" not in result.pages[0].excerpt
+    assert "title:" not in result.pages[0].excerpt.lower()
 
 
 @pytest.mark.parametrize("limit", [0, -1])
