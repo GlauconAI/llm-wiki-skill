@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Iterable
 
 from llm_wiki_maintainer.links import normalize_wikilink_target, section_block, wikilink_targets
+from llm_wiki_maintainer.references import parse_source_id, parse_sources_field
 from llm_wiki_maintainer.source_cards import location_has_raw_link, location_section
 
 _MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdx"}
@@ -26,6 +27,7 @@ def analyze_source_removal(root: Path | str, raw_path: Path | str) -> SourceRemo
     source_cards = _source_cards_for_raw(root_path, raw_target)
     impact.source_cards_to_delete.extend(source_cards)
 
+    source_card_ids = _source_card_ids(source_cards)
     dependent_pages = _dependent_pages_from_source_cards(root_path, source_cards)
     _extend_unique(impact.pages_to_update, dependent_pages)
 
@@ -40,17 +42,25 @@ def analyze_source_removal(root: Path | str, raw_path: Path | str) -> SourceRemo
         if not text:
             continue
 
+        matched_source_ids = [
+            source_id
+            for source_id in parse_sources_field(text)
+            if source_id in source_card_ids
+        ]
         matched_links = [
             link
             for link in wikilink_targets(text)
             if normalize_wikilink_target(link) in removal_targets
         ]
-        if not matched_links:
+        if not matched_links and not matched_source_ids:
             continue
 
-        _extend_unique(impact.pages_to_update, [page])
+        _append_unique(impact.pages_to_update, page)
         page_ref = page.relative_to(root_path).as_posix()
         impact.broken_links.extend(f"{page_ref} -> [[{link}]]" for link in matched_links)
+        impact.broken_links.extend(
+            f"{page_ref} -> sources: [{source_id}]" for source_id in matched_source_ids
+        )
 
     return impact
 
@@ -98,6 +108,15 @@ def _source_cards_for_raw(root: Path, raw_target: str) -> list[Path]:
     return source_cards
 
 
+def _source_card_ids(source_cards: list[Path]) -> set[str]:
+    source_ids: set[str] = set()
+    for card in source_cards:
+        source_id = parse_source_id(_safe_read(card))
+        if source_id:
+            source_ids.add(source_id)
+    return source_ids
+
+
 def _dependent_pages_from_source_cards(root: Path, source_cards: list[Path]) -> list[Path]:
     pages: list[Path] = []
     for source_card in source_cards:
@@ -140,3 +159,8 @@ def _extend_unique(paths: list[Path], new_paths: Iterable[Path]) -> None:
             continue
         seen.add(resolved)
         paths.append(resolved)
+
+
+def _append_unique(paths: list[Path], path: Path) -> None:
+    if path not in paths:
+        paths.append(path)

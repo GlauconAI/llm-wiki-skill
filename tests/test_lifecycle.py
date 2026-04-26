@@ -20,6 +20,27 @@ def test_analyze_source_removal_reports_dependent_pages(wiki_root: Path) -> None
     )
 
 
+def test_analyze_source_removal_reports_sources_frontmatter_dependencies(
+    wiki_root: Path,
+) -> None:
+    raw = wiki_root / "raw" / "sources" / "example-raw.md"
+    shared = wiki_root / "wiki" / "shared.md"
+    shared.write_text(
+        "---\n"
+        "type: concept\n"
+        "title: Shared Page\n"
+        "sources: [SRC-1]\n"
+        "---\n"
+        "\n"
+        "# Shared Page\n",
+        encoding="utf-8",
+    )
+
+    impact = analyze_source_removal(wiki_root, raw)
+
+    assert shared.resolve() in impact.pages_to_update
+
+
 def test_analyze_source_removal_does_not_resolve_bare_stem_used_by_links(
     wiki_root: Path,
 ) -> None:
