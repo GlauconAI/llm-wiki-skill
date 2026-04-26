@@ -60,3 +60,8 @@ def test_lint_root_reports_missing_source_card_id(wiki_root):
         and "missing valid id/source_id" in problem.message
         for problem in problems
     )
+    assert not any(
+        problem.path == "wiki/sources/example-source.md"
+        and "Used by lists non-actual references" in problem.message
+        for problem in problems
+    )

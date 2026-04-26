@@ -20,6 +20,7 @@ from llm_wiki_maintainer.references import (
     compute_used_by,
     declared_used_by,
     duplicate_source_card_ids,
+    malformed_source_cards,
     parse_frontmatter_type,
     parse_source_id,
 )
@@ -236,6 +237,7 @@ def lint_root(root: Path) -> list[LintProblem]:
     actual_compiled_pages: set[str] = set()
     declared_used_by_by_card = declared_used_by(root)
     actual_usage_by_card = compute_used_by(root)
+    invalid_source_cards = set(malformed_source_cards(root))
 
     def add_problem(path: str, message: str) -> None:
         problems.append(LintProblem(path=path, message=message))
@@ -302,6 +304,8 @@ def lint_root(root: Path) -> list[LintProblem]:
             add_problem("index.md", f"missing index link for {page}")
 
     for source_card, declared in sorted(declared_used_by_by_card.items()):
+        if source_card in invalid_source_cards:
+            continue
         actual = actual_usage_by_card.get(source_card, set())
         missing = sorted(actual - declared)
         extra = sorted(declared - actual)
