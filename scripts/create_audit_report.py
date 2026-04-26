@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-from pathlib import Path
 from datetime import date
+from pathlib import Path
+import re
 import sys
 
 TEMPLATE = '''---
@@ -51,7 +52,8 @@ sources: []
 
 
 def slugify(text: str) -> str:
-    return '-'.join(text.lower().strip().split())
+    slug = re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
+    return slug or 'report'
 
 
 def _looks_like_llm_wiki_root(root: Path) -> bool:
@@ -81,7 +83,9 @@ def main() -> int:
     today = date.today()
     date_iso = today.isoformat()
     slug = slugify(title)
-    out = root / 'wiki' / 'reports' / f'{date_iso}-{slug}.md'
+    report_dir = root / 'wiki' / 'reports'
+    report_dir.mkdir(parents=True, exist_ok=True)
+    out = report_dir / f'{date_iso}-{slug}.md'
     if out.exists():
         print(f'ERROR: report already exists: {out}')
         return 1
