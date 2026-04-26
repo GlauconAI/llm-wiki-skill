@@ -306,6 +306,32 @@ def test_analyze_source_removal_ignores_external_markdown_links(
     assert not any("openai" in link for link in impact.broken_links)
 
 
+def test_analyze_source_removal_ignores_markdown_outside_wiki_surface(
+    wiki_root: Path,
+) -> None:
+    raw = wiki_root / "raw" / "sources" / "example-raw.md"
+    docs_page = wiki_root / "docs" / "plan.md"
+    docs_page.parent.mkdir(parents=True, exist_ok=True)
+    docs_page.write_text(
+        "---\n"
+        "type: note\n"
+        "title: External Plan\n"
+        "sources: [SRC-1]\n"
+        "---\n"
+        "\n"
+        "# External Plan\n"
+        "\n"
+        "## Notes\n"
+        "- [[raw/sources/example-raw|/raw/sources/example-raw.md]]\n",
+        encoding="utf-8",
+    )
+
+    impact = analyze_source_removal(wiki_root, raw)
+
+    assert docs_page.resolve() not in impact.pages_to_update
+    assert not any("docs/plan.md" in link for link in impact.broken_links)
+
+
 def test_analyze_source_removal_does_not_resolve_bare_stem_used_by_links(
     wiki_root: Path,
 ) -> None:

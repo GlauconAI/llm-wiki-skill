@@ -90,7 +90,15 @@ def _resolve_path(root: Path, path: Path | str) -> Path:
 
 
 def _candidate_markdown_pages(root: Path) -> Iterable[Path]:
-    for path in sorted(root.rglob("*")):
+    index_page = root / "index.md"
+    if index_page.is_file() and index_page.suffix.lower() in _MARKDOWN_SUFFIXES:
+        yield index_page.resolve()
+
+    wiki_dir = root / "wiki"
+    if not wiki_dir.exists():
+        return
+
+    for path in sorted(wiki_dir.rglob("*")):
         if path.is_file() and path.suffix.lower() in _MARKDOWN_SUFFIXES:
             yield path.resolve()
 
@@ -176,17 +184,27 @@ def _resolve_wikilink_target(
     candidate = root / normalized
     candidate_resolved = candidate.resolve()
 
-    if candidate.is_file() and candidate_resolved not in excluded_resolved:
+    if (
+        candidate.is_file()
+        and candidate_resolved not in excluded_resolved
+        and _is_compiled_surface_page(root, candidate_resolved)
+    ):
         return candidate_resolved
 
     if candidate.suffix:
-        return candidate_resolved if candidate.is_file() and candidate_resolved not in excluded_resolved else None
+        if (
+            candidate.is_file()
+            and candidate_resolved not in excluded_resolved
+            and _is_compiled_surface_page(root, candidate_resolved)
+        ):
+            return candidate_resolved
+        return None
 
     for suffix in _MARKDOWN_SUFFIXES:
         with_suffix = candidate.with_suffix(suffix)
         if with_suffix.is_file():
             resolved = with_suffix.resolve()
-            if resolved not in excluded_resolved:
+            if resolved not in excluded_resolved and _is_compiled_surface_page(root, resolved):
                 return resolved
 
     return None
@@ -211,6 +229,22 @@ def _extend_unique(paths: list[Path], new_paths: Iterable[Path]) -> None:
             continue
         seen.add(resolved)
         paths.append(resolved)
+
+
+def _is_compiled_surface_page(root: Path, path: Path) -> bool:
+    root_path = root.resolve()
+    resolved = path.resolve()
+    index_page = root_path / "index.md"
+    if resolved == index_page:
+        return resolved.is_file()
+
+    wiki_root = root_path / "wiki"
+    try:
+        relative = resolved.relative_to(wiki_root)
+    except ValueError:
+        return False
+
+    return resolved.is_file() and relative.parts[:1] != ("sources",)
 
 
 def _append_unique(paths: list[Path], path: Path) -> None:
