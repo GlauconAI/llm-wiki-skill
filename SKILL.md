@@ -43,15 +43,16 @@ Run `python3 scripts/lint_llm_wiki.py` after structural edits or before claiming
 
 When an agent answers using llm-wiki:
 1. Read `index.md` first to locate the right pages.
-2. Read the relevant compiled pages in `wiki/`.
-3. Answer from `wiki/` when the page is sufficient, specific enough, and not high-risk.
-4. Return to `raw/` when any of the following is true:
+2. Use the retrieval engine to rank candidate pages before reading raw sources.
+3. Read the relevant compiled pages in `wiki/`.
+4. Answer from `wiki/` when the page is sufficient, specific enough, and not high-risk.
+5. Return to `raw/` when any of the following is true:
    - the wiki page is thin, incomplete, or outdated
    - the question is high-risk or precision-sensitive
    - the page itself marks uncertainty or conflict
    - the user asks for verification, source checking, wording accuracy, or exact numbers
    - a key claim lacks direct raw support
-5. If raw and wiki diverge, report the divergence explicitly and prefer raw for factual grounding.
+6. If raw and wiki diverge, report the divergence explicitly and prefer raw for factual grounding.
 
 ## Task modes
 
