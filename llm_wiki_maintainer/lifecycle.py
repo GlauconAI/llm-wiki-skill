@@ -139,34 +139,48 @@ def _source_card_ids(source_cards: list[Path]) -> set[str]:
 
 def _dependent_pages_from_source_cards(root: Path, source_cards: list[Path]) -> list[Path]:
     pages: list[Path] = []
+    excluded_pages = {card.resolve() for card in source_cards}
     for source_card in source_cards:
         text = _safe_read(source_card)
         used_by = section_block(text, "## Used by")
         for target in wikilink_targets(used_by):
-            page = _resolve_wikilink_target(root, target)
+            page = _resolve_wikilink_target(root, target, excluded_pages=excluded_pages)
             if page is not None:
                 _extend_unique(pages, [page])
     return pages
 
 
-def _resolve_wikilink_target(root: Path, target: str) -> Path | None:
+def _resolve_wikilink_target(
+    root: Path, target: str, excluded_pages: set[Path] | None = None
+) -> Path | None:
     normalized = normalize_wikilink_target(target)
+    excluded_resolved = (
+        {path.resolve() for path in excluded_pages} if excluded_pages is not None else set()
+    )
 
     if "/" not in normalized and Path(normalized).suffix == "":
-        return None
+        matches = [
+            page.resolve()
+            for page in _candidate_markdown_pages(root)
+            if page.stem == normalized and page.resolve() not in excluded_resolved
+        ]
+        return matches[0] if len(matches) == 1 else None
 
     candidate = root / normalized
+    candidate_resolved = candidate.resolve()
 
-    if candidate.is_file():
-        return candidate.resolve()
+    if candidate.is_file() and candidate_resolved not in excluded_resolved:
+        return candidate_resolved
 
     if candidate.suffix:
-        return candidate.resolve() if candidate.exists() else None
+        return candidate_resolved if candidate.is_file() and candidate_resolved not in excluded_resolved else None
 
     for suffix in _MARKDOWN_SUFFIXES:
         with_suffix = candidate.with_suffix(suffix)
         if with_suffix.is_file():
-            return with_suffix.resolve()
+            resolved = with_suffix.resolve()
+            if resolved not in excluded_resolved:
+                return resolved
 
     return None
 

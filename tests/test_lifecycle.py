@@ -80,6 +80,101 @@ def test_analyze_source_removal_reports_self_referential_source_link(
         "wiki/sources/example-source.md -> [[wiki/sources/example-source]]"
         in impact.broken_links
     )
+    assert source_card.resolve() not in impact.pages_to_update
+
+
+def test_analyze_source_removal_resolves_unique_bare_stem_used_by_links(
+    wiki_root: Path,
+) -> None:
+    raw = wiki_root / "raw" / "sources" / "bare-stem-raw.md"
+    raw.write_text(
+        "# Bare Stem Raw\n",
+        encoding="utf-8",
+    )
+    source_card = wiki_root / "wiki" / "sources" / "bare-stem-source.md"
+    source_card.write_text(
+        "---\n"
+        "type: source\n"
+        "id: SRC-100\n"
+        "title: Bare Stem Source\n"
+        "---\n"
+        "\n"
+        "# Source: Bare Stem Source\n"
+        "\n"
+        "## Location\n"
+        "[[raw/sources/bare-stem-raw|/raw/sources/bare-stem-raw.md]]\n"
+        "\n"
+        "## Type\n"
+        "md\n"
+        "\n"
+        "## Coverage\n"
+        "- Bare stem coverage.\n"
+        "\n"
+        "## Used by\n"
+        "- [[overview]]\n"
+        "\n"
+        "## Key Sections\n"
+        "- Bare stem section.\n"
+        "\n"
+        "## Notes\n"
+        "- Bare stem source card for testing.\n",
+        encoding="utf-8",
+    )
+
+    impact = analyze_source_removal(wiki_root, raw)
+
+    assert wiki_root.joinpath("wiki", "overview.md").resolve() in impact.pages_to_update
+    assert not any("wiki/overview.md -> [[overview]]" in link for link in impact.broken_links)
+
+
+def test_analyze_source_removal_does_not_fall_back_from_explicit_path_links(
+    wiki_root: Path,
+) -> None:
+    raw = wiki_root / "raw" / "sources" / "docs-raw.md"
+    raw.write_text(
+        "# Docs Raw\n",
+        encoding="utf-8",
+    )
+    source_card = wiki_root / "wiki" / "sources" / "docs-source.md"
+    source_card.write_text(
+        "---\n"
+        "type: source\n"
+        "id: SRC-101\n"
+        "title: Docs Source\n"
+        "---\n"
+        "\n"
+        "# Source: Docs Source\n"
+        "\n"
+        "## Location\n"
+        "[[raw/sources/docs-raw|/raw/sources/docs-raw.md]]\n"
+        "\n"
+        "## Type\n"
+        "md\n"
+        "\n"
+        "## Coverage\n"
+        "- Docs coverage.\n"
+        "\n"
+        "## Used by\n"
+        "- [[docs/consumer]]\n"
+        "\n"
+        "## Key Sections\n"
+        "- Docs section.\n"
+        "\n"
+        "## Notes\n"
+        "- Docs source card for testing.\n",
+        encoding="utf-8",
+    )
+    unrelated = wiki_root / "wiki" / "consumer.md"
+    unrelated.write_text(
+        "# Consumer\n",
+        encoding="utf-8",
+    )
+
+    impact = analyze_source_removal(wiki_root, raw)
+
+    assert source_card.resolve() in impact.source_cards_to_delete
+    assert unrelated.resolve() not in impact.pages_to_update
+    assert not any("docs/consumer" in link for link in impact.broken_links)
 
 
 def test_analyze_source_removal_does_not_resolve_bare_stem_used_by_links(
