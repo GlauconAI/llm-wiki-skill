@@ -56,7 +56,7 @@ def analyze_source_removal(root: Path | str, raw_path: Path | str) -> SourceRemo
             continue
 
         _append_unique(impact.pages_to_update, page)
-        page_ref = page.relative_to(root_path).as_posix()
+        page_ref = _display_path(root_path, page)
         impact.broken_links.extend(f"{page_ref} -> [[{link}]]" for link in matched_links)
         impact.broken_links.extend(
             f"{page_ref} -> sources: [{source_id}]" for source_id in matched_source_ids
@@ -71,7 +71,7 @@ def analyze_source_removal(root: Path | str, raw_path: Path | str) -> SourceRemo
         if not matched_links:
             continue
 
-        page_ref = source_card.relative_to(root_path).as_posix()
+        page_ref = _display_path(root_path, source_card)
         impact.broken_links.extend(f"{page_ref} -> [[{link}]]" for link in matched_links)
 
     deleted_pages = {path.resolve() for path in impact.source_cards_to_delete}
@@ -100,6 +100,13 @@ def _safe_read(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except OSError:
         return ""
+
+
+def _display_path(root: Path, path: Path) -> str:
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def _path_target(root: Path, path: Path) -> str:

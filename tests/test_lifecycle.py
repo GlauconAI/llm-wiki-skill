@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import llm_wiki_maintainer.lifecycle as lifecycle
 from llm_wiki_maintainer.lifecycle import analyze_source_removal
 
 
@@ -213,7 +214,7 @@ def test_analyze_source_removal_does_not_fall_back_from_explicit_path_links(
         "- Docs coverage.\n"
         "\n"
         "## Used by\n"
-        "- [[docs/consumer]]\n"
+        "- [[docs/example]]\n"
         "\n"
         "## Key Sections\n"
         "- Docs section.\n"
@@ -222,9 +223,10 @@ def test_analyze_source_removal_does_not_fall_back_from_explicit_path_links(
         "- Docs source card for testing.\n",
         encoding="utf-8",
     )
-    unrelated = wiki_root / "wiki" / "consumer.md"
+    unrelated = wiki_root / "wiki" / "notes" / "example.md"
+    unrelated.parent.mkdir(parents=True, exist_ok=True)
     unrelated.write_text(
-        "# Consumer\n",
+        "# Example\n",
         encoding="utf-8",
     )
 
@@ -232,7 +234,76 @@ def test_analyze_source_removal_does_not_fall_back_from_explicit_path_links(
 
     assert source_card.resolve() in impact.source_cards_to_delete
     assert unrelated.resolve() not in impact.pages_to_update
-    assert not any("docs/consumer" in link for link in impact.broken_links)
+    assert not any("docs/example" in link for link in impact.broken_links)
+
+
+def test_analyze_source_removal_uses_safe_display_for_source_outside_root(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    raw = tmp_path / "outside" / "raw" / "example-raw.md"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("# Outside Raw\n", encoding="utf-8")
+    source_card = tmp_path / "outside" / "wiki" / "sources" / "example-source.md"
+    source_card.parent.mkdir(parents=True)
+    source_target = source_card.resolve().with_suffix("").as_posix().lstrip("/")
+    source_card.write_text(
+        "---\n"
+        "type: source\n"
+        "id: SRC-500\n"
+        "title: Outside Source\n"
+        "---\n"
+        "\n"
+        "## Used by\n"
+        f"- [[{source_target}]]\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        lifecycle,
+        "_source_cards_for_raw",
+        lambda root_path, raw_target: [source_card.resolve()],
+    )
+
+    impact = analyze_source_removal(root, raw)
+
+    assert impact.source_cards_to_delete == [source_card.resolve()]
+    assert any(
+        link.startswith(f"{source_card.resolve().as_posix()} -> [[{source_target}]]")
+        for link in impact.broken_links
+    )
+
+
+def test_analyze_source_removal_ignores_external_markdown_links(
+    wiki_root: Path,
+) -> None:
+    raw = wiki_root / "raw" / "sources" / "external-links-raw.md"
+    raw.write_text(
+        "# External Links Raw\n",
+        encoding="utf-8",
+    )
+    source_card = wiki_root / "wiki" / "sources" / "external-links-source.md"
+    source_card.write_text(
+        "---\n"
+        "type: source\n"
+        "id: SRC-501\n"
+        "title: External Links Source\n"
+        "---\n"
+        "\n"
+        "## Location\n"
+        "[[raw/sources/external-links-raw|/raw/sources/external-links-raw.md]]\n"
+        "\n"
+        "## Used by\n"
+        "- [openai](https://openai.com)\n",
+        encoding="utf-8",
+    )
+
+    impact = analyze_source_removal(wiki_root, raw)
+
+    assert impact.source_cards_to_delete == [source_card.resolve()]
+    assert not any("openai" in link for link in impact.broken_links)
 
 
 def test_analyze_source_removal_does_not_resolve_bare_stem_used_by_links(
