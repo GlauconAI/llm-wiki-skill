@@ -40,6 +40,8 @@ Run `python3 scripts/lint_llm_wiki.py` after structural edits or before claiming
 - Use Obsidian-clickable wikilinks for internal vault paths; do not leave raw pointers as plain code-formatted text paths.
 - Source cards are navigation-only. If a page starts teaching the topic instead of routing to evidence, it is in the wrong layer.
 - Avoid source laundering: do not cite a source card as if it were evidence for a claim. Source cards route; raw proves.
+- Before deleting a source, do an impact analysis of the pages that depend on it.
+- For shared pages, remove the deleted source from `sources:` before deletion is approved.
 
 ## Answer-mode protocol
 
