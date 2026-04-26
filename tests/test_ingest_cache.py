@@ -30,6 +30,25 @@ def test_manifest_normalizes_keys_relative_to_wiki_root(tmp_path):
     assert loaded.has_changed(raw.relative_to(tmp_path)) is False
 
 
+def test_manifest_round_trips_no_root_save_then_load_with_root(tmp_path):
+    raw = tmp_path / "raw" / "sources" / "a.md"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("hello", encoding="utf-8")
+
+    manifest = SourceManifest.empty()
+    manifest.remember(raw)
+    manifest.save(tmp_path)
+
+    saved = yaml.safe_load((tmp_path / MANIFEST_PATH).read_text(encoding="utf-8"))
+
+    assert list(saved["hashes"]) == ["raw/sources/a.md"]
+
+    loaded = SourceManifest.load(tmp_path)
+
+    assert loaded.has_changed(raw) is False
+    assert loaded.has_changed(raw.relative_to(tmp_path)) is False
+
+
 def test_manifest_load_rejects_non_mapping_yaml(tmp_path):
     manifest_path = tmp_path / MANIFEST_PATH
     manifest_path.parent.mkdir(parents=True)

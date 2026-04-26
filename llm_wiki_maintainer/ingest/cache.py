@@ -32,8 +32,21 @@ class SourceManifest:
             raise ValueError("ingest manifest hashes must be a mapping")
         return cls(
             root=root_path,
-            hashes={str(key): str(value) for key, value in hashes.items()},
+            hashes={
+                cls._normalize_key_for_root(key, root_path): str(value)
+                for key, value in hashes.items()
+            },
         )
+
+    @staticmethod
+    def _normalize_key_for_root(path: Path | str, root: Path) -> str:
+        path = Path(path)
+        resolved = path if path.is_absolute() else root / path
+        resolved = resolved.resolve(strict=False)
+        try:
+            return resolved.relative_to(root).as_posix()
+        except ValueError:
+            return resolved.as_posix()
 
     def _key(self, path: Path) -> str:
         path = Path(path)
@@ -67,10 +80,15 @@ class SourceManifest:
         self.hashes[self._key(path)] = hashlib.sha256(self._resolved_path(path).read_bytes()).hexdigest()
 
     def save(self, root: Path) -> Path:
-        path = Path(root) / MANIFEST_PATH
+        root_path = Path(root).resolve()
+        path = root_path / MANIFEST_PATH
         path.parent.mkdir(parents=True, exist_ok=True)
+        hashes = {
+            self._normalize_key_for_root(key, root_path): value
+            for key, value in self.hashes.items()
+        }
         path.write_text(
-            yaml.safe_dump({"hashes": self.hashes}, sort_keys=True),
+            yaml.safe_dump({"hashes": hashes}, sort_keys=True),
             encoding="utf-8",
         )
         return path
