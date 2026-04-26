@@ -68,9 +68,17 @@ def parse_sources_field(text: str) -> list[str]:
 
 def used_by_links(text: str) -> set[str]:
     links: set[str] = set()
-    for target in wikilink_targets(section_block(text, "## Used by")):
-        if target.startswith("wiki/"):
-            links.add(target)
+    for line in section_block(text, "## Used by").splitlines():
+        stripped = line.strip()
+        if not (
+            stripped.startswith("- ")
+            or stripped.startswith("* ")
+            or re.match(r"^\d+\.\s+", stripped)
+        ):
+            continue
+        for target in wikilink_targets(stripped):
+            if target.startswith("wiki/"):
+                links.add(target)
     return links
 
 
@@ -106,6 +114,8 @@ def malformed_source_cards(root: Path) -> list[str]:
         except (ValueError, yaml.YAMLError):
             malformed.append(card_ref)
             continue
+        if "## Used by" not in text:
+            malformed.append(card_ref)
         if parse_source_id(text) is None:
             malformed.append(card_ref)
     for paths in duplicate_source_card_ids(root).values():

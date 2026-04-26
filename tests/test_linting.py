@@ -77,3 +77,19 @@ def test_lint_root_treats_equivalent_used_by_link_targets_as_matching(wiki_root)
     problems = lint_root(wiki_root)
 
     assert not any("Used by" in problem.message for problem in problems)
+
+
+def test_lint_root_does_not_treat_prose_inside_used_by_as_valid_backlink(wiki_root):
+    source_card = wiki_root / "wiki" / "sources" / "example-source.md"
+    source_card.write_text(
+        source_card.read_text(encoding="utf-8").replace("- [[wiki/overview]]", "See [[wiki/overview]]"),
+        encoding="utf-8",
+    )
+
+    problems = lint_root(wiki_root)
+
+    assert any(
+        problem.path == "wiki/sources/example-source.md"
+        and "Used by" in problem.message
+        for problem in problems
+    )
