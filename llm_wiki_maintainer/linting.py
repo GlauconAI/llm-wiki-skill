@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
+import yaml
+
 from llm_wiki_maintainer.frontmatter import load_frontmatter
 from llm_wiki_maintainer.links import (
     RAW_WIKILINK_RE,
@@ -79,14 +81,14 @@ class LintProblem:
 def body_without_frontmatter(text: str) -> str:
     try:
         return load_frontmatter(text).body
-    except ValueError:
+    except (ValueError, yaml.YAMLError):
         return text
 
 
 def frontmatter_error(text: str) -> str | None:
     try:
         load_frontmatter(text)
-    except ValueError as exc:
+    except (ValueError, yaml.YAMLError) as exc:
         return str(exc)
     return None
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 import re
 
+import yaml
+
 from llm_wiki_maintainer.frontmatter import load_frontmatter
 from llm_wiki_maintainer.links import rel, section_block, section_bounds
 
@@ -10,10 +12,16 @@ COMPILED_FACT_TYPES = {"overview", "concept", "entity", "topic"}
 SOURCE_ID_RE = re.compile(r"SRC-\d+", re.I)
 
 
+class MalformedFrontmatterError(Exception):
+    def __init__(self, paths: list[str]):
+        self.paths = paths
+        super().__init__(", ".join(paths))
+
+
 def frontmatter_value(text: str, key: str) -> str | None:
     try:
         value = load_frontmatter(text).data.get(key)
-    except ValueError:
+    except (ValueError, yaml.YAMLError):
         return None
     if value is None:
         return None
@@ -37,7 +45,7 @@ def parse_source_id(text: str) -> str | None:
 def parse_sources_field(text: str) -> list[str]:
     try:
         raw_sources = load_frontmatter(text).data.get("sources")
-    except ValueError:
+    except (ValueError, yaml.YAMLError):
         return []
     if raw_sources is None:
         return []
@@ -99,13 +107,30 @@ def compute_used_by(root: Path) -> dict[str, set[str]]:
     return usage
 
 
+def malformed_compiled_pages(root: Path) -> list[str]:
+    malformed: list[str] = []
+    for path in sorted((root / "wiki").rglob("*.md")):
+        page_ref = rel(path, root)
+        if "/sources/" in page_ref:
+            continue
+        text = path.read_text(encoding="utf-8")
+        try:
+            load_frontmatter(text)
+        except (ValueError, yaml.YAMLError):
+            malformed.append(page_ref)
+    return malformed
+
+
 def render_used_by(refs: set[str]) -> str:
     if not refs:
-        return "- _No compiled wiki pages currently reference this source._\n"
-    return "".join(f"- [[{ref}]]\n" for ref in sorted(refs))
+        return "- _No compiled wiki pages currently reference this source._\n\n"
+    return "".join(f"- [[{ref}]]\n" for ref in sorted(refs)) + "\n"
 
 
 def sync_used_by(root: Path) -> list[Path]:
+    malformed = malformed_compiled_pages(root)
+    if malformed:
+        raise MalformedFrontmatterError(malformed)
     usage = compute_used_by(root)
     card_paths = {
         rel(path, root): path

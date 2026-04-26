@@ -27,7 +27,7 @@ def test_compute_used_by_supports_multiline_sources(wiki_root):
 
 def test_update_used_by_script_skips_malformed_frontmatter_without_traceback(wiki_root):
     broken = wiki_root / "wiki" / "broken.md"
-    broken.write_text("---\ntype: topic\nsources: [SRC-1]\n", encoding="utf-8")
+    broken.write_text("---\ntype: [oops\n---\n", encoding="utf-8")
     script = Path(__file__).resolve().parents[1] / "scripts" / "update_used_by.py"
 
     result = subprocess.run(
@@ -39,5 +39,6 @@ def test_update_used_by_script_skips_malformed_frontmatter_without_traceback(wik
         check=False,
     )
 
-    assert result.returncode == 0
+    assert result.returncode == 1
+    assert "malformed frontmatter" in result.stdout
     assert "Traceback" not in result.stderr

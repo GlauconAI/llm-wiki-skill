@@ -11,7 +11,7 @@ if VENDOR_ROOT.exists() and str(VENDOR_ROOT) not in sys.path:
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from llm_wiki_maintainer.references import sync_used_by
+from llm_wiki_maintainer.references import MalformedFrontmatterError, sync_used_by
 
 ROOT_DEFAULT = Path('/Users/glaucon/Obsidian/Glaucon Vault/aristotle-lyceum/llm-wiki')
 
@@ -22,7 +22,11 @@ def main() -> int:
         print(f'ERROR: root not found: {root}')
         return 2
 
-    updated_cards = sync_used_by(root)
+    try:
+        updated_cards = sync_used_by(root)
+    except MalformedFrontmatterError as exc:
+        print(f"ERROR: malformed frontmatter in compiled pages: {exc}")
+        return 1
     for card in updated_cards:
         print(f'updated {card}')
 

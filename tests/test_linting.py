@@ -29,7 +29,7 @@ def test_lint_root_returns_problem_objects(wiki_root):
 
 def test_lint_script_reports_malformed_frontmatter_without_traceback(wiki_root):
     broken = wiki_root / "wiki" / "broken.md"
-    broken.write_text("---\ntype: topic\nsources: [SRC-1]\n", encoding="utf-8")
+    broken.write_text("---\ntype: [oops\n---\n", encoding="utf-8")
     script = Path(__file__).resolve().parents[1] / "scripts" / "lint_llm_wiki.py"
 
     result = subprocess.run(
