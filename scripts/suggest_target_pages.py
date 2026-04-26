@@ -21,11 +21,7 @@ def main() -> int:
         print(f"ERROR: raw file not found: {raw_file}")
         return 2
 
-    candidates = [
-        candidate
-        for candidate in suggest_target_pages(raw_file, root)
-        if candidate.score >= 6
-    ]
+    candidates = suggest_target_pages(raw_file, root)
     print("Suggested affected pages:")
     if not candidates:
         print("- No strong candidates found. Consider creating a new topic or concept page.")

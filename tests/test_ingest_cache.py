@@ -1,4 +1,5 @@
 import yaml
+import pytest
 
 from llm_wiki_maintainer.ingest.cache import MANIFEST_PATH, SourceManifest
 
@@ -27,3 +28,12 @@ def test_manifest_normalizes_keys_relative_to_wiki_root(tmp_path):
 
     assert loaded.has_changed(raw) is False
     assert loaded.has_changed(raw.relative_to(tmp_path)) is False
+
+
+def test_manifest_load_rejects_non_mapping_yaml(tmp_path):
+    manifest_path = tmp_path / MANIFEST_PATH
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text("- not a mapping\n- still not a mapping\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="ingest manifest must decode to a mapping"):
+        SourceManifest.load(tmp_path)

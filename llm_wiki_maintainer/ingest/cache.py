@@ -25,6 +25,8 @@ class SourceManifest:
         if not path.exists():
             return cls.empty(root_path)
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        if not isinstance(data, dict):
+            raise ValueError("ingest manifest must decode to a mapping")
         hashes = data.get("hashes", {})
         if not isinstance(hashes, dict):
             raise ValueError("ingest manifest hashes must be a mapping")
