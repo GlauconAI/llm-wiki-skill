@@ -42,6 +42,72 @@ See [[wiki/overview]].
     assert shared_source_edges
 
 
+def test_build_graph_normalizes_scalar_source_ids(wiki_root):
+    graph = build_graph(wiki_root)
+
+    assert "src-1" not in graph.nodes
+    assert "SRC-1" in graph.nodes
+    assert any(
+        edge["kind"] == "source"
+        and edge["source"] == "wiki/scalar"
+        and edge["target"] == "SRC-1"
+        for edge in graph.edges
+    )
+
+
+def test_build_graph_deduplicates_repeated_wikilinks(wiki_root):
+    graph = build_graph(wiki_root)
+
+    repeated_edges = [
+        edge
+        for edge in graph.edges
+        if edge["kind"] == "wikilink"
+        and edge["source"] == "wiki/dup"
+        and edge["target"] == "wiki/overview"
+    ]
+
+    assert len(repeated_edges) == 1
+    assert graph.nodes["wiki/dup"]["degree"] == 1
+
+
+def test_build_graph_deduplicates_repeated_links_and_sources(wiki_root):
+    repeated = wiki_root / "wiki" / "repeated.md"
+    repeated.write_text(
+        """---
+type: concept
+title: Repeated
+sources: [SRC-1, src-1, SRC-1]
+---
+
+# Repeated
+
+See [[wiki/overview]] and [[wiki/overview]].
+""",
+        encoding="utf-8",
+    )
+
+    graph = build_graph(wiki_root)
+
+    source_edges = [
+        edge
+        for edge in graph.edges
+        if edge["kind"] == "source"
+        and edge["source"] == "wiki/repeated"
+        and edge["target"] == "SRC-1"
+    ]
+    wikilink_edges = [
+        edge
+        for edge in graph.edges
+        if edge["kind"] == "wikilink"
+        and edge["source"] == "wiki/repeated"
+        and edge["target"] == "wiki/overview"
+    ]
+
+    assert len(source_edges) == 1
+    assert len(wikilink_edges) == 1
+    assert graph.nodes["wiki/repeated"]["degree"] == 4
+
+
 def test_build_graph_preserves_source_card_metadata_when_cited(wiki_root):
     graph = build_graph(wiki_root)
 

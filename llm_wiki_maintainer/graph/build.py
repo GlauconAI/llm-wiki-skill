@@ -3,12 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
+import re
 
 import yaml
 
 from llm_wiki_maintainer.frontmatter import load_frontmatter
 from llm_wiki_maintainer.links import rel, wikilink_targets
 from llm_wiki_maintainer.references import parse_source_id, parse_sources_field
+
+SOURCE_ID_RE = re.compile(r"SRC-\d+", re.I)
 
 
 @dataclass
@@ -55,16 +58,18 @@ def build_graph(root: Path) -> WikiGraph:
         page_records.append((page_id, text, document))
 
     for page_id, text, document in page_records:
-        for target in wikilink_targets(document.body):
+        for target in dict.fromkeys(wikilink_targets(document.body)):
             add_edge(graph, page_id, target, kind="wikilink")
 
-        for source_id in parse_sources_field(text):
+        for source_id in dict.fromkeys(
+            normalize_source_id(source_id) for source_id in parse_sources_field(text)
+        ):
             pages_by_source.setdefault(source_id, set()).add(page_id)
             add_node(graph, source_id, kind="source", title=source_id)
             add_edge(graph, page_id, source_id, kind="source")
 
     for source_id, _text, document in source_records:
-        for target in wikilink_targets(document.body):
+        for target in dict.fromkeys(wikilink_targets(document.body)):
             add_edge(graph, source_id, target, kind="wikilink")
 
     for source_id, page_ids in pages_by_source.items():
@@ -96,3 +101,7 @@ def add_edge(graph: WikiGraph, source: str, target: str, **attrs: object) -> Non
 def increment_degree(graph: WikiGraph, node_id: str) -> None:
     node = graph.nodes[node_id]
     node["degree"] = int(node.get("degree", 0)) + 1
+
+
+def normalize_source_id(source_id: str) -> str:
+    return source_id.upper() if SOURCE_ID_RE.fullmatch(source_id) else source_id
