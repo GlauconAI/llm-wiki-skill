@@ -42,6 +42,56 @@ See [[wiki/overview]].
     assert shared_source_edges
 
 
+def test_build_graph_preserves_source_card_metadata_when_cited(wiki_root):
+    graph = build_graph(wiki_root)
+
+    source_node = graph.nodes["SRC-1"]
+
+    assert source_node["kind"] == "source"
+    assert source_node["title"] == "Example Source"
+    assert source_node["path"] == "wiki/sources/example-source.md"
+
+
+def test_build_graph_records_wikilink_edges_for_missing_targets(wiki_root):
+    page = wiki_root / "wiki" / "missing-link.md"
+    page.write_text(
+        """---
+type: concept
+title: Missing Link
+---
+
+# Missing Link
+
+See [[wiki/not-loaded]].
+""",
+        encoding="utf-8",
+    )
+
+    graph = build_graph(wiki_root)
+
+    assert any(
+        edge["kind"] == "wikilink"
+        and edge["source"] == "wiki/missing-link"
+        and edge["target"] == "wiki/not-loaded"
+        for edge in graph.edges
+    )
+    assert graph.nodes["wiki/not-loaded"]["degree"] == 1
+
+
+def test_build_graph_skips_malformed_files_without_aborting(wiki_root):
+    broken_page = wiki_root / "wiki" / "broken.md"
+    broken_page.write_text("---\ntype: [oops\n---\n", encoding="utf-8")
+    broken_source = wiki_root / "wiki" / "sources" / "broken-source.md"
+    broken_source.write_text("---\ntype: source\nid: [oops\n---\n", encoding="utf-8")
+
+    graph = build_graph(wiki_root)
+
+    assert "wiki/overview" in graph.nodes
+    assert "SRC-1" in graph.nodes
+    assert "wiki/broken" not in graph.nodes
+    assert "broken-source" not in graph.nodes
+
+
 def test_find_isolated_pages_returns_list(wiki_root):
     isolated = wiki_root / "wiki" / "isolated.md"
     isolated.write_text(

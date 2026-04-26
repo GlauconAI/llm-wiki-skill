@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
 
+import yaml
+
 from llm_wiki_maintainer.frontmatter import load_frontmatter
 from llm_wiki_maintainer.links import rel, wikilink_targets
 from llm_wiki_maintainer.references import parse_source_id, parse_sources_field
@@ -23,9 +25,12 @@ def build_graph(root: Path) -> WikiGraph:
     wiki_dir = root / "wiki"
 
     for path in sorted(wiki_dir.rglob("*.md")):
-        text = path.read_text(encoding="utf-8", errors="replace")
-        document = load_frontmatter(text)
         relative = rel(path, root)
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+            document = load_frontmatter(text)
+        except (OSError, ValueError, yaml.YAMLError):
+            continue
 
         if relative.startswith("wiki/sources/"):
             source_id = parse_source_id(text) or path.with_suffix("").name
@@ -51,8 +56,7 @@ def build_graph(root: Path) -> WikiGraph:
 
     for page_id, text, document in page_records:
         for target in wikilink_targets(document.body):
-            if target in graph.nodes:
-                add_edge(graph, page_id, target, kind="wikilink")
+            add_edge(graph, page_id, target, kind="wikilink")
 
         for source_id in parse_sources_field(text):
             pages_by_source.setdefault(source_id, set()).add(page_id)
@@ -61,8 +65,7 @@ def build_graph(root: Path) -> WikiGraph:
 
     for source_id, _text, document in source_records:
         for target in wikilink_targets(document.body):
-            if target in graph.nodes:
-                add_edge(graph, source_id, target, kind="wikilink")
+            add_edge(graph, source_id, target, kind="wikilink")
 
     for source_id, page_ids in pages_by_source.items():
         if source_id not in graph.nodes:
@@ -75,7 +78,10 @@ def build_graph(root: Path) -> WikiGraph:
 
 def add_node(graph: WikiGraph, node_id: str, **attrs: object) -> None:
     node = graph.nodes.setdefault(node_id, {"degree": 0})
-    node.update(attrs)
+    for key, value in attrs.items():
+        if key == "title" and node.get("title"):
+            continue
+        node.setdefault(key, value)
 
 
 def add_edge(graph: WikiGraph, source: str, target: str, **attrs: object) -> None:
