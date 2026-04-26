@@ -44,3 +44,19 @@ def test_lint_script_reports_malformed_frontmatter_without_traceback(wiki_root):
     assert result.returncode == 1
     assert "malformed frontmatter" in result.stdout
     assert "Traceback" not in result.stderr
+
+
+def test_lint_root_reports_missing_source_card_id(wiki_root):
+    source_card = wiki_root / "wiki" / "sources" / "example-source.md"
+    source_card.write_text(
+        source_card.read_text(encoding="utf-8").replace("id: SRC-1\n", ""),
+        encoding="utf-8",
+    )
+
+    problems = lint_root(wiki_root)
+
+    assert any(
+        problem.path == "wiki/sources/example-source.md"
+        and "missing valid id/source_id" in problem.message
+        for problem in problems
+    )

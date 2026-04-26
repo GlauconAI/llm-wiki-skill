@@ -19,6 +19,7 @@ from llm_wiki_maintainer.references import (
     COMPILED_FACT_TYPES,
     compute_used_by,
     declared_used_by,
+    duplicate_source_card_ids,
     parse_frontmatter_type,
     parse_source_id,
 )
@@ -247,6 +248,8 @@ def lint_root(root: Path) -> list[LintProblem]:
             add_problem(card_ref, f"malformed frontmatter: {error}")
         if parse_source_id(text):
             actual_usage_by_card.setdefault(card_ref, set())
+        else:
+            add_problem(card_ref, "source card missing valid id/source_id")
         for section in SOURCE_REQUIRED:
             if section not in text:
                 add_problem(card_ref, f"missing source-card section: {section}")
@@ -306,6 +309,10 @@ def lint_root(root: Path) -> list[LintProblem]:
             add_problem(source_card, f"Used by missing actual references: {missing}")
         if extra:
             add_problem(source_card, f"Used by lists non-actual references: {extra}")
+
+    for source_id, paths in sorted(duplicate_source_card_ids(root).items()):
+        for path in paths:
+            add_problem(path, f"duplicate source card id detected: {source_id}")
 
     for path in sorted(raw_dir.rglob("*.md")):
         text = path.read_text(encoding="utf-8")

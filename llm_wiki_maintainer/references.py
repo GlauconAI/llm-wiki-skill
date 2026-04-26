@@ -82,6 +82,19 @@ def source_card_paths_by_id(root: Path) -> dict[str, str]:
     return cards
 
 
+def duplicate_source_card_ids(root: Path) -> dict[str, list[str]]:
+    ids_to_paths: dict[str, list[str]] = {}
+    for path in sorted((root / "wiki" / "sources").glob("*.md")):
+        source_id = parse_source_id(path.read_text(encoding="utf-8"))
+        if source_id:
+            ids_to_paths.setdefault(source_id, []).append(rel(path, root))
+    return {
+        source_id: paths
+        for source_id, paths in ids_to_paths.items()
+        if len(paths) > 1
+    }
+
+
 def malformed_source_cards(root: Path) -> list[str]:
     malformed: list[str] = []
     for path in sorted((root / "wiki" / "sources").glob("*.md")):
@@ -94,6 +107,8 @@ def malformed_source_cards(root: Path) -> list[str]:
             continue
         if parse_source_id(text) is None:
             malformed.append(card_ref)
+    for paths in duplicate_source_card_ids(root).values():
+        malformed.extend(paths)
     return malformed
 
 

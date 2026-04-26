@@ -25,7 +25,7 @@ def main() -> int:
     try:
         updated_cards = sync_used_by(root)
     except MalformedFrontmatterError as exc:
-        print(f"ERROR: malformed frontmatter in compiled pages: {exc}")
+        print(f"ERROR: invalid source metadata or malformed frontmatter: {exc}")
         return 1
     for card in updated_cards:
         print(f'updated {card}')

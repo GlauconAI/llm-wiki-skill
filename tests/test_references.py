@@ -64,3 +64,50 @@ def test_update_used_by_script_fails_when_source_card_id_is_missing(wiki_root):
     assert result.returncode == 1
     assert "wiki/sources/example-source.md" in result.stdout
     assert "Traceback" not in result.stderr
+
+
+def test_update_used_by_script_fails_when_source_card_ids_are_duplicated(wiki_root):
+    duplicate = wiki_root / "wiki" / "sources" / "duplicate-source.md"
+    duplicate.write_text(
+        """---
+type: source
+id: SRC-1
+title: Duplicate Source
+---
+
+# Source: Duplicate Source
+
+## Location
+[[raw/sources/example-raw]]
+
+## Type
+md
+
+## Coverage
+- Duplicate coverage.
+
+## Used by
+- [[wiki/overview]]
+
+## Key Sections
+- Duplicate section.
+
+## Notes
+- Duplicate source card for testing.
+""",
+        encoding="utf-8",
+    )
+    script = Path(__file__).resolve().parents[1] / "scripts" / "update_used_by.py"
+
+    result = subprocess.run(
+        [sys.executable, str(script), str(wiki_root)],
+        cwd=Path(__file__).resolve().parents[1],
+        env={},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "wiki/sources/duplicate-source.md" in result.stdout
+    assert "Traceback" not in result.stderr
