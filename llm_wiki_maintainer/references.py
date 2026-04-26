@@ -58,10 +58,12 @@ def parse_sources_field(text: str) -> list[str]:
                 continue
             value = str(item).strip()
             if value:
-                sources.append(value)
+                sources.append(value.upper() if SOURCE_ID_RE.fullmatch(value) else value)
         return sources
     value = str(raw_sources).strip()
-    return [value] if value else []
+    if not value:
+        return []
+    return [value.upper() if SOURCE_ID_RE.fullmatch(value) else value]
 
 
 def used_by_links(text: str) -> set[str]:
@@ -78,6 +80,21 @@ def source_card_paths_by_id(root: Path) -> dict[str, str]:
         if source_id:
             cards[source_id] = rel(path, root)
     return cards
+
+
+def malformed_source_cards(root: Path) -> list[str]:
+    malformed: list[str] = []
+    for path in sorted((root / "wiki" / "sources").glob("*.md")):
+        card_ref = rel(path, root)
+        text = path.read_text(encoding="utf-8")
+        try:
+            load_frontmatter(text)
+        except (ValueError, yaml.YAMLError):
+            malformed.append(card_ref)
+            continue
+        if parse_source_id(text) is None:
+            malformed.append(card_ref)
+    return malformed
 
 
 def declared_used_by(root: Path) -> dict[str, set[str]]:
@@ -128,9 +145,9 @@ def render_used_by(refs: set[str]) -> str:
 
 
 def sync_used_by(root: Path) -> list[Path]:
-    malformed = malformed_compiled_pages(root)
+    malformed = malformed_compiled_pages(root) + malformed_source_cards(root)
     if malformed:
-        raise MalformedFrontmatterError(malformed)
+        raise MalformedFrontmatterError(sorted(malformed))
     usage = compute_used_by(root)
     card_paths = {
         rel(path, root): path
