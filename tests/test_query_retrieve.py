@@ -82,6 +82,44 @@ Readable body text with a unique bodyterm here.
     assert "Generic Page" not in result.pages[0].excerpt
 
 
+def test_retrieve_context_does_not_score_filename_stem_without_metadata_match(wiki_root):
+    extra = wiki_root / "wiki" / "stem-only.md"
+    extra.write_text(
+        """---
+type: concept
+title: Generic Page
+---
+""",
+        encoding="utf-8",
+    )
+
+    result = retrieve_context("stem-only", wiki_root, limit=5)
+
+    assert result.pages == []
+
+
+def test_retrieve_context_uses_source_for_source_only_matches(wiki_root):
+    extra = wiki_root / "wiki" / "source-only.md"
+    extra.write_text(
+        """---
+type: concept
+title: Generic Page
+sources: [SRC-42]
+---
+
+Readable body text without the query term.
+""",
+        encoding="utf-8",
+    )
+
+    result = retrieve_context("SRC-42", wiki_root, limit=5)
+
+    assert result.pages
+    assert result.pages[0].path.name == "source-only.md"
+    assert result.pages[0].excerpt == "Source match: SRC-42"
+    assert "Generic Page" not in result.pages[0].excerpt
+
+
 @pytest.mark.parametrize("limit", [0, -1])
 def test_retrieve_context_clamps_non_positive_limits(wiki_root, limit):
     result = retrieve_context("example", wiki_root, limit=limit)

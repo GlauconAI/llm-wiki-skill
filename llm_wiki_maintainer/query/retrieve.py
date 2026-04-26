@@ -33,15 +33,15 @@ def _page_title(path: Path, text: str) -> str:
     title = frontmatter.get("title")
     if isinstance(title, str) and title.strip():
         return title.strip()
-    return path.stem.replace("-", " ").strip() or path.stem
+    return ""
 
 
 def _page_text(path: Path, text: str) -> str:
     try:
         document = load_frontmatter(text)
     except Exception:
-        return text
-    return document.body.strip() or path.stem.replace("-", " ").strip() or path.stem
+        return text.strip()
+    return document.body.strip()
 
 
 def _page_excerpt_source(path: Path, text: str, tokens: Iterable[str], sources: Iterable[str]) -> str:
@@ -59,10 +59,13 @@ def _page_excerpt_source(path: Path, text: str, tokens: Iterable[str], sources: 
         return body
 
     title_matches = title and any(_token_match(title.lower(), token) is not None for token in tokens if token)
-    source_text = " ".join(sources).lower()
-    source_matches = source_text and any(_token_match(source_text, token) is not None for token in tokens if token)
-    if title_matches or source_matches:
+    if title_matches:
         return title
+
+    for source in sources:
+        source_text = source.lower()
+        if any(_token_match(source_text, token) is not None for token in tokens if token):
+            return f"Source match: {source}"
 
     if body:
         return body
