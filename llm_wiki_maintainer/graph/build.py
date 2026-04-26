@@ -36,7 +36,9 @@ def build_graph(root: Path) -> WikiGraph:
             continue
 
         if relative.startswith("wiki/sources/"):
-            source_id = parse_source_id(text) or path.with_suffix("").name
+            source_id = parse_source_id(text)
+            if source_id is None:
+                continue
             add_node(
                 graph,
                 source_id,

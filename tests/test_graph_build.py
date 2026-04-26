@@ -170,6 +170,30 @@ def test_build_graph_skips_malformed_files_without_aborting(wiki_root):
     assert "broken-source" not in graph.nodes
 
 
+def test_build_graph_skips_parseable_source_cards_missing_ids(wiki_root):
+    missing_id_source = wiki_root / "wiki" / "sources" / "missing-id.md"
+    missing_id_source.write_text(
+        """---
+type: source
+title: Missing Id Source
+---
+
+# Missing Id Source
+
+## Used by
+- [[wiki/overview]]
+""",
+        encoding="utf-8",
+    )
+
+    graph = build_graph(wiki_root)
+
+    assert "missing-id" not in graph.nodes
+    assert "Missing Id Source" not in {
+        node.get("title") for node in graph.nodes.values() if node.get("kind") == "source"
+    }
+
+
 def test_find_isolated_pages_returns_list(wiki_root):
     isolated = wiki_root / "wiki" / "isolated.md"
     isolated.write_text(
@@ -189,3 +213,25 @@ sources: []
 
     assert isinstance(result, list)
     assert "wiki/isolated" in result
+
+
+def test_find_isolated_pages_ignores_degree_one_pages(wiki_root):
+    linked = wiki_root / "wiki" / "linked-once.md"
+    linked.write_text(
+        """---
+type: concept
+title: Linked Once
+---
+
+# Linked Once
+
+See [[wiki/not-loaded]].
+""",
+        encoding="utf-8",
+    )
+
+    graph = build_graph(wiki_root)
+    result = find_isolated_pages(graph)
+
+    assert graph.nodes["wiki/linked-once"]["degree"] == 1
+    assert "wiki/linked-once" not in result
