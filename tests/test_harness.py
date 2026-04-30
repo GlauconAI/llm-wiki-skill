@@ -5,12 +5,20 @@ import sys
 
 import pytest
 
+
 def test_wiki_root_copies_minimal_fixture_vault(wiki_root: Path) -> None:
     assert wiki_root.exists()
     assert (wiki_root / "index.md").is_file()
     assert (wiki_root / "wiki" / "overview.md").is_file()
     assert (wiki_root / "wiki" / "sources" / "example-source.md").is_file()
     assert (wiki_root / "raw" / "sources" / "example-raw.md").is_file()
+
+
+def test_skill_doc_avoids_machine_specific_absolute_paths() -> None:
+    skill_path = Path(__file__).resolve().parents[1] / "SKILL.md"
+    text = skill_path.read_text(encoding="utf-8")
+
+    assert "/Users/glaucon/Obsidian/" not in text
 
 
 def _load_script_module(script_name: str):

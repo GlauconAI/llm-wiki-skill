@@ -12,18 +12,16 @@ if VENDOR_DIR.exists() and str(VENDOR_DIR) not in sys.path:
     sys.path.insert(0, str(VENDOR_DIR))
 
 from llm_wiki_maintainer.config import RuntimeConfig
+from llm_wiki_maintainer.registry import resolve_wiki_root
 from llm_wiki_maintainer.source_cards import create_source_card
-
-
-def _looks_like_llm_wiki_root(root: Path) -> bool:
-    return (root / "raw").is_dir() and (root / "wiki").is_dir()
-
 
 def _root_from_raw_path(raw_file: Path) -> Path | None:
     resolved = raw_file.expanduser().resolve()
     for candidate in (resolved.parent, *resolved.parents):
-        if _looks_like_llm_wiki_root(candidate):
-            return candidate
+        try:
+            return resolve_wiki_root(root=candidate)
+        except ValueError:
+            continue
     return None
 
 
@@ -35,6 +33,8 @@ def main() -> int:
     raw_file = Path(sys.argv[1]).expanduser()
     if not raw_file.is_absolute():
         raw_file = (Path.cwd() / raw_file).resolve()
+    else:
+        raw_file = raw_file.resolve()
 
     if not raw_file.is_file():
         print(f"ERROR: raw file not found: {raw_file}")
@@ -46,10 +46,9 @@ def main() -> int:
             print(f"ERROR: root not found: {root_arg}")
             return 2
     else:
-        cwd = Path.cwd().resolve()
-        if _looks_like_llm_wiki_root(cwd):
-            root_arg = cwd
-        else:
+        try:
+            root_arg = resolve_wiki_root()
+        except ValueError:
             root_arg = _root_from_raw_path(raw_file)
             if root_arg is None:
                 print(

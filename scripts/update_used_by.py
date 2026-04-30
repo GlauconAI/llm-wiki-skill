@@ -12,28 +12,15 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from llm_wiki_maintainer.references import MalformedFrontmatterError, sync_used_by
-
-
-def _looks_like_llm_wiki_root(root: Path) -> bool:
-    return (root / 'raw').is_dir() and (root / 'wiki').is_dir()
-
-
-def _resolve_root_from_cwd() -> Path | None:
-    cwd = Path.cwd().resolve()
-    return cwd if _looks_like_llm_wiki_root(cwd) else None
+from llm_wiki_maintainer.registry import resolve_wiki_root
 
 
 def main() -> int:
-    if len(sys.argv) > 1:
-        root = Path(sys.argv[1]).expanduser().resolve()
-        if not root.exists():
-            print(f'ERROR: root not found: {root}')
-            return 2
-    else:
-        root = _resolve_root_from_cwd()
-        if root is None:
-            print('ERROR: current directory does not look like an llm-wiki root; pass an explicit root argument.')
-            return 2
+    try:
+        root = resolve_wiki_root(root=sys.argv[1] if len(sys.argv) > 1 else None)
+    except ValueError:
+        print('ERROR: current directory does not look like an llm-wiki root; pass an explicit root argument.')
+        return 2
 
     try:
         updated_cards = sync_used_by(root)

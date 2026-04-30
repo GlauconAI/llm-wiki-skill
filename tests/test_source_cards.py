@@ -1,7 +1,9 @@
 from datetime import date
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 import llm_wiki_maintainer.config as config_module
 from llm_wiki_maintainer.config import RuntimeConfig
@@ -196,3 +198,56 @@ def test_create_source_card_cli_accepts_dot_root_argument(tmp_path):
 
     assert result.returncode == 0
     assert "created:" in result.stdout
+
+
+def test_create_source_card_cli_writes_runtime_today(tmp_path, monkeypatch):
+    root = tmp_path / "llm-wiki"
+    raw = root / "raw" / "sources" / "today-note.md"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("# Today Note\n", encoding="utf-8")
+    script = Path(__file__).resolve().parents[1] / "scripts" / "create_source_card.py"
+
+    spec = spec_from_file_location("create_source_card", script)
+    assert spec is not None
+    assert spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class FakeDate(date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 4, 29)
+
+    monkeypatch.setattr(config_module, "date", FakeDate)
+    monkeypatch.setattr(sys, "argv", ["create_source_card.py", str(raw), str(root)])
+
+    assert module.main() == 0
+
+    card_path = root / "wiki" / "sources" / "today-note.md"
+    document = load_frontmatter(card_path.read_text(encoding="utf-8"))
+    assert document.data["created"] == "2026-04-29"
+    assert document.data["updated"] == "2026-04-29"
+
+
+def test_create_source_card_cli_accepts_tmp_symlink_absolute_path():
+    with tempfile.TemporaryDirectory(dir="/tmp") as temp_dir:
+        root = Path(temp_dir) / "llm-wiki"
+        raw = root / "raw" / "sources" / "tmp-note.md"
+        raw.parent.mkdir(parents=True)
+        raw.write_text("# Tmp Note\n", encoding="utf-8")
+        script = Path(__file__).resolve().parents[1] / "scripts" / "create_source_card.py"
+
+        raw_arg = str(raw).replace("/private/tmp/", "/tmp/")
+        root_arg = str(root).replace("/private/tmp/", "/tmp/")
+
+        result = subprocess.run(
+            [sys.executable, str(script), raw_arg, root_arg],
+            cwd=Path(__file__).resolve().parents[1],
+            env={},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 0
+        assert "created:" in result.stdout

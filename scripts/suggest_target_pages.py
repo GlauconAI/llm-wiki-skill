@@ -7,17 +7,16 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from llm_wiki_maintainer.ingest.planner import suggest_target_pages
-
-
-def _looks_like_llm_wiki_root(root: Path) -> bool:
-    return (root / "raw").is_dir() and (root / "wiki").is_dir()
+from llm_wiki_maintainer.registry import resolve_wiki_root
 
 
 def _root_from_raw_path(raw_file: Path) -> Path | None:
     resolved = raw_file.expanduser().resolve()
     for candidate in (resolved.parent, *resolved.parents):
-        if _looks_like_llm_wiki_root(candidate):
-            return candidate
+        try:
+            return resolve_wiki_root(root=candidate)
+        except ValueError:
+            continue
     return None
 
 
@@ -30,15 +29,15 @@ def main() -> int:
         print(f"ERROR: raw file not found: {raw_file}")
         return 2
     if len(sys.argv) > 2:
-        root = Path(sys.argv[2]).expanduser().resolve()
-        if not root.exists():
-            print(f"ERROR: root not found: {root}")
+        try:
+            root = resolve_wiki_root(root=sys.argv[2])
+        except ValueError:
+            print(f"ERROR: root not found: {Path(sys.argv[2]).expanduser().resolve()}")
             return 2
     else:
-        cwd = Path.cwd().resolve()
-        if _looks_like_llm_wiki_root(cwd):
-            root = cwd
-        else:
+        try:
+            root = resolve_wiki_root()
+        except ValueError:
             root = _root_from_raw_path(raw_file)
             if root is None:
                 print(

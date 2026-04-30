@@ -5,7 +5,7 @@ description: Use when working on Aristotle's llm-wiki knowledge system: ingestin
 
 # LLM Wiki Maintainer
 
-Maintain `/Users/glaucon/Obsidian/Glaucon's Vault/aristotle-lyceum/llm-wiki` as a strict three-layer system:
+Maintain the active `llm-wiki` root as a strict three-layer system:
 
 - `raw/` = only source of truth
 - `wiki/` = directly usable compiled knowledge
@@ -14,9 +14,9 @@ Maintain `/Users/glaucon/Obsidian/Glaucon's Vault/aristotle-lyceum/llm-wiki` as 
 ## Required reads
 
 Before touching llm-wiki:
-1. Read `/Users/glaucon/Obsidian/Glaucon's Vault/README.md`
-2. Read `/Users/glaucon/Obsidian/Glaucon's Vault/aristotle-lyceum/llm-wiki/AGENTS.md`
-3. Read `/Users/glaucon/Obsidian/Glaucon's Vault/aristotle-lyceum/llm-wiki/index.md`
+1. Read the vault-level `README.md`
+2. Read `<llm-wiki-root>/AGENTS.md`
+3. Read `<llm-wiki-root>/index.md`
 
 Read `references/templates.md` when creating or rewriting pages.
 Run `python3 scripts/lint_llm_wiki.py` after structural edits or before claiming the wiki is healthy.
@@ -70,6 +70,46 @@ When an agent answers using llm-wiki:
 6. If raw and wiki diverge, report the divergence explicitly and prefer raw for factual grounding.
 
 ## Task modes
+
+### 0. Workflow router
+Treat these as the primary operator entrypoints when the user asks for a top-level workflow:
+
+- `init` = establish the target `llm-wiki` root, then read `README.md`, `<llm-wiki-root>/AGENTS.md`, and `<llm-wiki-root>/index.md`
+- `ingest` = use the ingest queue and source-card workflow for new raw material
+- `batch-ingest` = import a folder, enqueue the resulting raw files, then run ingest
+- `query` = use the retrieval runtime for a bounded answer context
+- `save-query` = persist the bounded query context under `wiki/queries/` without turning it into a full digest
+- `digest` = persist a query-driven synthesis into `wiki/digests/`
+- `status` = inspect the current runtime, queue, and content health summary
+- `graph` = inspect graph relationships and insight signals before deeper synthesis work
+- `delete` = run source-removal impact analysis first; only apply deletion after explicit approval
+- `crystallize` = turn temporary synthesis into a durable page under `wiki/crystallized/`
+- `lint` = run structural and traceability checks before calling the wiki healthy
+
+Current source adapters are intentionally narrow:
+
+- `local_file` for direct files already on disk
+- `folder_import` for recursive local imports
+- `research_task` for approved or explicit research queue execution
+
+When an adapter-based workflow reports failure, classify it with the shared adapter states:
+- `not_installed`
+- `env_unavailable`
+- `runtime_failed`
+- `unsupported`
+- `empty_result`
+
+Keep the query outputs distinct:
+
+- `query` is transient answer support
+- `save-query` is persisted retrieval/context only
+- `digest` is the heavier synthesized artifact
+
+For root selection, prefer the shared resolver order:
+
+1. explicit root
+2. current working directory when it is already an `llm-wiki` root
+3. active root from the multi-wiki registry
 
 ### 1. Ingest mode
 Use when new raw material arrives.

@@ -27,6 +27,10 @@ def test_lint_root_returns_problem_objects(wiki_root):
     )
 
 
+def test_lint_root_accepts_official_healthy_fixture(healthy_wiki_root):
+    assert lint_root(healthy_wiki_root) == []
+
+
 def test_lint_script_reports_malformed_frontmatter_without_traceback(wiki_root):
     broken = wiki_root / "wiki" / "broken.md"
     broken.write_text("---\ntype: [oops\n---\n", encoding="utf-8")
